@@ -1,0 +1,65 @@
+\chapter{Meglévő megoldásokkal összehasonlítása}
+
+\section{Meglévő ipari megoldások}
+
+\subsection{Schneider Power Monitoring Expert}
+
+\subsubsection{Alapfunkciók}
+
+\begin{itemize}
+    \item Segít csökkenteni a meddő teljesítmény termelést és az ebből keletkező büntetéseket.
+    \item Saját számlát készít, a helyi mérések alapján, hogy összehasonlítási alap legyen a számlákhoz.
+    \item Segít elszámolhatóságot biztosítani alszámlázáshoz.
+    \item Berendezések teljesítményét és várható élettartamát ellenőrzi.
+    \item Valós idejű adatfigyelés, riasztás és energiafolyamatok vezérlése a létesítményen belül.
+    \item Azonosítsa a potenciális áramminőségi problémákat a hálózatában, és értesíti erről a személyzetet.
+\end{itemize}
+\cite{sePME}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.3\textwidth]{figures/sePME.png}
+    \caption{Schneider Electric PME model\cite{sePME}}
+    \label{fig:schneider-pme}
+\end{figure}
+
+\subsubsection{Előnyök}
+
+Az energiamérési rendszer használata átlagban 24\%-kal csökkentette a fogyasztást, 
+és 30\%-al a költségeket.
+
+Mivel folyamatos megfigyelés és  beavatkozás lehetséges, a problémák korai szakaszában orvosolhatóak így
+ezeket 22\%-al lehet csökkenteni. Ez a tudatosság csökkenteni a a hiba utáni visszaállítások idejét is.
+Ezenkívül segít a mögöttes problémák megtalálásában is.\cite{sePME}
+
+\subsection{Siemens SIMATIC Energy Suite}
+
+\subsubsection{Alapfunkciók}
+
+A Siemens SIMATIC Energy Management rendszere integrált tehát nem csak megfigyelésre alkalmas hanem vezérlésre is. 
+A már létező TIA Portal keretrendszerükbe épül és így egy helyen elérhető a többi rendszerükkel. 
+Ez szintén egy moduláris és skálázható rendszer.
+Megfelel az ISO 50001 szabványnak, és ez is alkalmazható terhelés figyelésre számlázásra és rendszerelemzésre,
+mint az előzőleg taglalt rendszer.\cite{sieEMS}
+
+\subsubsection{Előnyök}
+
+\begin{itemize}
+    \item Terepi szintű integráció saját és más eszközökkel. Figyelve itt az egyedi eszközökre.
+    \item Gyártás szintű felügyelet. Üzem szintű energia fogyasztást lehet vele figyelni.
+    \item Nagyobb rendszerekben vállalati szintű energiaelemzés, ahol több helyszín között is lehet felügyelni.
+    \item Ezentúl alkalmas beavatkozásra is. Amennyiben túl nagy a fogyasztás képes fogyasztókat leválasztani távolról is akár.
+\end{itemize}
+\cite{sieEMS}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/sieEMS.png}
+    \caption{Siemens EMS model\cite{sieEMS}}
+    \label{fig:siemens-ems}
+\end{figure}
+
+\section{Saját megoldás}
+
+A dolgozatom további részében hasonló rendszer kidolgozásán szeretnék dolgozni, ami lehetőleg tartalmazza
+ezeket a képességeket. Sőt lehetőleg meg is haladja őket és árban is sokkal versenyképesebb mint ezek a rendszerek.
