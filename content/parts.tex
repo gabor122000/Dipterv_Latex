@@ -12,4 +12,46 @@
 
 \subsection{Adatbázis}
 
+A rendszer által generált adatok tárolásához egy Prometheus adatbázist használok. 
+A Prometheus egy nyílt forráskódú idősoros adatbázis, ami inkább felhő környezetben ismert, 
+de ugyanolyan hasznos az IoT-telemetria számára. Minden adatot időbélyegzett értéksorozatként kezel.
+Ezeket lehet tárolni és lekérdezni.
+\cite{electrofunsmart:iotserver}
+\cite{prometheus:dimenzionális}
+
+Esetemben minden metrika tárhelyeként szolgál. Ez lehetővé teszi, 
+hogy megőrizzem a töltési áramok történetét és ez alapján irányítsam a rendszert.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.5\textwidth, keepaspectratio]{figures/maxresdefault.jpg}
+    \caption{Prometheus \cite{youtube:someid}} 
+\end{figure}
+
+A Flask szerver-ből könnyű továbbítani az adatokat. A megközelítés amit én használtam hogy egy HTTPS /metrics 
+végpont elérhetővé tettem. Amin prometheus által olvasható formában hirdettem az adatokat. 
+Például a Flask alkalmazás tudja továbbítani a mért számokat:
+\begin{lstlisting}
+    current_gauge = prometheus_client.Gauge('ev_charger_current', 'Current draw of EV charger', ['charger']). 
+\end{lstlisting}
+
+Ha olvasás érkezik, a szerver frissíti a számokat (egyébként ezt periodikusan is megteszi)
+\begin{lstlisting}
+    current_gauge.labels(charger=id).set(value). 
+\end{lstlisting}
+
+A Prometheus-nak előre megkell adni az ip-címeket a konfugorációs filejában
+(a scrape konfigurációján keresztül), hogy időszakonként megnézze a Flask szerver 
+/metrics URL-jét. 
+Ez azért előnyösebb mert utólag ezeket már nem lehet állítani a prometheusban indítás után.
+A szerver, pedig egy stabil IP címen van. A sok fizikai végpontról, pedig a szerver gyújt ahol elértem, hogy 
+üzem közben is lehessen új végpontokat hozzáadni vagy módosítani.
+
+Amikor a Prometheus olvas, a Flask az összes aktuális értéket szöveges 
+Prometheus metrika formátumban adja ki. A Prometheus ezután ezeket az értékeket a metrikanévvel és címkékkel 
+indexelve tárolja. Ez a lehívás alapú felügyelet jól illeszkedik a Prometheus működéséhez. 
+A Prometheus adatai megjeleníthetők a Grafana által is és összetett lekérdezések írhatók 
+például a teljes áram kiszámítására, amihez szükségem is volt nekem rendszer irányítsásához.
+
+
 \subsection{Megjelenítés}

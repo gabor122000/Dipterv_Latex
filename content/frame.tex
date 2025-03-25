@@ -122,11 +122,59 @@ Ezt úgy küldi a szervernek, hogy már könnyű legyen prometheusnak tovább k�
 
 \subsection{ESP8266 és Szerver között (Wi-Fi és REST API)}
 
-Az adatkommunikációhoz az ESP8266 csomópontok szabványos Wi-Fi hálózatot használnak a mérések továbbítására 
-a Flask szerverre. Indításkor minden ESP8266 a tárolt SSID és jelszó használatával csatlakozik a konfigurált 
-Wi-Fi hozzáférési ponthoz. A firmware az ESP8266 WiFi könyvtárat használja a hálózathoz való csatlakozáshoz 
-(pl. WiFi.begin(ssid, jelszó)), és megvárja, amíg létrejön a kapcsolat
+A kommunikációhoz az ESP8266 végpontok Wi-Fi-t használnak a mérések továbbítására a vezérlő Flask szerverre. 
+Indításkor minden ESP8266 csatlakozik a konfigurált 
+Wi-Fi hozzáférési ponthoz. 
+\begin{lstlisting}
+    (pl. WiFi.begin(ssid, jelszó))
+\end{lstlisting}
+Itt az ESP8266 beépített WiFi könyvtárat használtam.
 \cite{techtutorialsx:esp8266flask}
-. A csatlakozást követően a csomópont képes HTTP kéréseket küldeni a szerver IP-címére. Egy egyszerű RESTful API-t implementálunk a Flask szerveren az adatok fogadásához. Például mindegyik ESP8266 végrehajthat egy HTTP POST kérést egy végponthoz, például a http://<szerver_ip>:5000/api/reading JSON-adattartalommal, amely tartalmazza az aktuális mérést és egy azonosítót. A JSON adatstruktúra a következő lehet:
+A csatlakozást követően a csomópont képes HTTP vagy esetünkben HTTPS kéréseket küldeni a szerver IP-címére. 
+Egy egyszerű RESTful API-t implementáltam a Flask szerveren az adatok fogadásához. 
+Minden fizikai végpont Prometheus adatbázis jellegű kommunikációhoz is használt végponton hirdeti a mért adatait.
+\begin{lstlisting}
+    app.run(host="0.0.0.0", port=6000, ssl_context=('cert.pem', 'key.pem'))
+\end{lstlisting}
+
+\begin{lstlisting}
+    http://<szerver_ip>:6000/metrics
+\end{lstlisting} 
+A JSON adatstruktúra a következő:
+
+\begin{lstlisting}
+    def metrics():
+    return jsonify({
+        "simulator_id": simulator_id,
+        "current": current_value,
+        "state": "plugged in" if charger_on else "plugged out",
+        "max_current": max_current
+    })
+\end{lstlisting}
+
+A Wi-Fi kommunikáció itt nem követeli meg, hogy az ESP8266 ismerje a szerver címét, mert csak GET parancsokat
+használtam. Itt a kiszolgáló fix IP-címmel rendelkezhet a LAN-ban. Elég viszont, ha a szerver ismeri a végpontok IP címeit,
+amit viszont könnyű megadni és frissíteni.
+Kezdetben titkosítatlan HTTP-t használtam, viszont ezt később frissítettem a valódi telepítési környezethez hasonló 
+HTTPS-el. Szerencsére az ESP8266 képes kezelni a TLS-t.
+
+\subsection{Modbus}
+
+A vezérlő oldalon a szerver a Modbus protokollt használja az EV-töltőkkel való kommunikációhoz. 
+A Modbus egy széles körben elterjedt protokoll az ipari rendszerekben elektronikus eszközök csatlakoztatására. 
+Eredtileg PLC-k közötti Kommunikáció kialakítására használták.
+A mi beállításunkban a szerver Modbus masterként van konfigurálva, 
+és minden EV töltő Modbus slave eszköz (Modbus/TCP). A Modbuson keresztül a szerver képes regisztereket olvasni a 
+töltőkről, és regisztereket írni. Ezzel áttudtam írni a töltőben a maximális áramértéket amit engedélyezett. 
+\cite{mcuoneclipse:evcharger}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\textwidth, keepaspectratio]{figures/Modbus_Frame.png}
+    \caption{Modbus adatstruktúra \cite{instrumentationtools:modbus}} 
+\end{figure}
+
+A képen Modbus RTU soros kommunikáció összeállítása látszik. Ebben a rendszerben Modbus TCP rendszert használunk.
+Ez igazából csak annyit csinál, hogy TCP keretekbe foglalja a már előbb felsorolt kommunikációt.
 
 \subsection{Standardizált Kommunikáció}
