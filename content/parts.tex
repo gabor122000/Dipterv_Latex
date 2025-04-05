@@ -53,5 +53,84 @@ indexelve tárolja. Ez a lehívás alapú felügyelet jól illeszkedik a Prometh
 A Prometheus adatai megjeleníthetők a Grafana által is és összetett lekérdezések írhatók 
 például a teljes áram kiszámítására, amihez szükségem is volt nekem rendszer irányítsásához.
 
+\subsubsection{Prometheus adatgyűjtés kezelése}
 
+A mikrokontroller több metrikát is mér, 
+amit belső változókba elment. Jelenleg teszt célokból ezek, csak kézzel megadott számok.
+
+\begin{lstlisting}[language=HTML]
+    {
+      "# HELP": "esp8266_current Current sensor reading.",
+      "# TYPE": "esp8266_current gauge",
+      "esp8266_current0": 1.20,
+      "esp8266_current1": 2.50
+    }
+\end{lstlisting}
+
+Ez a formátum megengedi, hogy ezt a /metrics endpointon a prometheus folyamatosan lekérdezze a mikrokontrollerektől. \\
+
+A formátumot a következő függvény hozza létre és küldi:
+
+\begin{lstlisting}[language=C]
+    sendMetricsToEndpoint()
+    ...
+    server.send(200, "text/plain", metrics);
+\end{lstlisting}
+
+\subsubsection{Prometheus lekérdezések kezelése}
+
+\begin{lstlisting}[language=C]
+    queryPrometheus()
+\end{lstlisting}
+
+Ez a függvény egy HTTP GET kérést küld a Prometheus szervernek, amely a esp8266\_total\_current 
+metrikát kérdezi le és a prometheusValue változóba írja be.
+
+\begin{lstlisting}
+    /api/v1/query?query=esp8266_total_current
+\end{lstlisting}
+
+A fentebbi endpointon. \\
+A lekérdezés sikerességét a httpCode ellenőrzésével teszem amennyiben ez 200-at ad vissza az értéket eltárolom 
+és kiírom a soros kommunikáción ellenőrzés céljából.
+
+\begin{lstlisting}[language=C]
+    if (httpCode == HTTP_CODE_OK) {
+      String payload = http.getString();
+      Serial.println("Response from Prometheus:");
+      Serial.println(payload);  \texttt{Adat JSON-be nyomtatása}
+
+      DynamicJsonDocument doc(1024);
+      DeserializationError error = deserializeJson(doc, payload);
+
+      if (error) {
+        Serial.print(F("JSON deserialization failed: "));
+        Serial.println(error.c_str());
+        return;
+      }
+    }
+\end{lstlisting}
+
+Mivel a lekérdezés egy JSON formátumú változót ad vissza és ennek feldolgozása nehézkes ezért ezt rögtön szám 
+formátumba alakítom későbbi feldolgozás céljából.
+
+\begin{lstlisting}[language=C]
+    
+    const char* status = doc["status"];
+    if (String(status) == "success") {
+      
+      const char* valueStr = doc["data"]["result"][0]["value"][1];
+      
+      prometheusValue = String(valueStr).toFloat();
+
+      Serial.print("Extracted Prometheus Value: ");
+      Serial.println(prometheusValue);
+    }
+\end{lstlisting}
+
+A fenti rész kinyeri az adatot JSON formátumból és szám formátumba írja.\\
+\\
+Természetesen az egész queryPrometheus loop-ban ismétlődve fut, hogy a kontroller folyamatosan frissítse az értékeket. 
+Jelenleg a gyakoriságot 30 másodpercre állítottam, hogy ne terhelje a próbák során feleslegesen a hálózatot, 
+de gyorsabb válaszidő érdekében ez növelhető.
 \subsection{Megjelenítés}

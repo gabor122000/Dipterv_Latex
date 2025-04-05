@@ -114,9 +114,58 @@ Ezt úgy küldi a szervernek, hogy már könnyű legyen prometheusnak tovább k�
 
 \subsubsection{Mért eszközök}
 
-\subsection{Adatbázis}
+Különböző eszközök mérését hajtok végre egy hálózatban, amiknél, más paraméterek mérésére van szükségünk.
 
-\subsection{Kontroll szerver}
+Ilyen eszközök a megszakítók, itt érzékelnünk kell:
+\begin{itemize}
+    \item \textbf{Megszakítók:}
+    \begin{itemize}
+        \item Pillanatnyi áramerősség
+        \item Állapotjelzés
+        \item Hibajel
+        \item Túlterhelés figyelmeztetések
+    \end{itemize}
+    \item \textbf{Autótöltők:}
+    \begin{itemize}
+        \item Pillanatnyi áram
+        \item Állapot (csatlakoztatva, tölt, hiba, stb...)
+    \end{itemize}
+    \item \textbf{Szekrények:}
+    \begin{itemize}
+        \item Hőmérés
+        \item Gázelemzés (füst érzékelés)
+    \end{itemize}
+\end{itemize}
+
+A mérések egy mikrokontrollerbe vannak beprogramozva, sok esetben, 
+hogy a megfelelő és helyileg feldolgozható jelet kapjunk valamilyen hardverre van szükség, ez átalakítja az eredeti jelet. 
+Ilyen például az áram méréséhez használt áramváltó és sönt ellenállás, jellemzően a nagyobb áramokat 5 A-re transzformáljuk 
+egy áramváltóval.
+
+Esetünkben maga az ESP8266 chip az analóg bemenetén 0 és 1 volt közötti jelszintet vár, 
+viszont a nodeMCU környezet már végez az áramkörön feszültség áttalakítást így a bemeneti skála változik 0 és 3,3 voltra.
+
+Ha áramméréseket áramváltóval akarjuk megvalósítani akkor az áramváltó 5 A-es maximum kimenetét kell 
+a kontroller 3,3 v-os maximum bemenetére alakítani. Ezt egy sönt ellenállással tudjuk megvalósítani.
+
+
+\begin{equation}
+    R = \frac{U}{I} = \frac{3.3 \, \text{V}}{5 \, \text{A}} = 660 \, \text{m}\Omega
+\end{equation}
+\begin{center}
+    \textbf{1. egyenlet:} Áramméréshez használt sönt ellenállás értéke
+\end{center}
+    
+\begin{equation}
+    P = U \times I = 3.3 \, \text{V} \times 5 \, \text{A} = 16.5 \, \text{W}
+\end{equation}
+\begin{center}
+    \textbf{2. egyenlet:} A sönt ellenállás
+\end{center}
+
+A számítások után látszik, hogy olyan ellenállásra van szükség, ami $R = 660 m\Omega$ ellenállással rendelkezik és legalább 16,5 W 
+teljesítményt el tud diszipálni folyamatos terhelés melett is.
+
 
 \section{Kommunikáció}
 
