@@ -26,15 +26,15 @@ A Kubernetes viszont egy robusztus, open source platform a konténerek telepít�
 skálázásának és üzemeltetésének automatizálására hostokon. A Kubernetes új absztrakciókat vezet be:
 
 \begin{itemize}
-    \item Pod: Ez a legkisebb telepíthető egység, amely egy vagy több konténert foglalnak magukba.
+    \item \textbf{Pod:} Ez a legkisebb telepíthető egység, amely egy vagy több konténert foglalnak magukba.
     
-    \item Deployment: Állapot nélküli alkalmazások kezelésére szolgáló objektumok, amelyek olyan funkciókat kínálnak, mint a gördülő frissítések és a visszaállítás.
+    \item \textbf{Deployment:} Állapot nélküli alkalmazások kezelésére szolgáló objektumok, amelyek olyan funkciókat kínálnak, mint a gördülő frissítések és a visszaállítás.
     
-    \item Service: Végpontokat biztosítanak a podok eléréséhez, segítve a felfedezést és a terheléselosztást.
+    \item \textbf{Service:} Végpontokat biztosítanak a podok eléréséhez, segítve a felfedezést és a terheléselosztást.
     
-    \item ConfigMap és Secret: Mechanizmus a konfiguráció és az imagek szétválasztására.
+    \item \textbf{ConfigMap és Secret:} Mechanizmus a konfiguráció és az imagek szétválasztására.
     
-    \item PersistentVolumeClaim (PVC): Absztrakció adattárolásra.
+    \item \textbf{PersistentVolumeClaim (PVC):} Absztrakció adattárolásra.
 \end{itemize}
 
 A migráció során ezeket képeztem le docker-ből k8-ba.
@@ -50,19 +50,19 @@ A migráció során ezeket képeztem le docker-ből k8-ba.
 A rendszer a már megismert következő részeket tartalmazza:
 
 \begin{itemize}
-    \item Prometheus: Egyéni prometheus.yml fájllal konfigurált idősoros adatbázis. 
+    \item \textbf{Prometheus:} Egyéni prometheus.yml fájllal konfigurált idősoros adatbázis. 
     Ennek szerencsétlensége, hogy az újra konfiguráció csak újra indítással lehetséges.
     
-    \item Grafana: Vizualizációs eszköz, ami közvetlen a Prometheushoz kapcsolódik megjelenítéséhez.
+    \item \textbf{Grafana:} Vizualizációs eszköz, ami közvetlen a Prometheushoz kapcsolódik megjelenítéséhez.
     
-    \item ESP8266 szimulátorok: Itt épen három példány szimulálja a különböző szimulátorazonosítókkal 
+    \item \textbf{ESP8266 szimulátorok:} Itt épen három példány szimulálja a különböző szimulátorazonosítókkal 
     rendelkező eszközöket.
     
-    \item Breaker Simulators: Más jellegű, de hasonló célú szimulátor.
+    \item \textbf{Breaker Simulators:} Más jellegű, de hasonló célú szimulátor.
     
-    \item Vezérlőszerver: Lebonyolítja az eszközök közötti interakciókat, vezérlést és adatok továbbítását.
+    \item \textbf{Vezérlőszerver:} Lebonyolítja az eszközök közötti interakciókat, vezérlést és adatok továbbítását.
     
-    \item System Simulator: A rendszer általános viselkedését emuláló központi szolgáltatás.
+    \item \textbf{System Simulator:} A rendszer általános viselkedését emuláló központi szolgáltatás.
 \end{itemize}
 
 A Docker Compose alkalmazásban ezek az összetevők hálózaton és socketeken keresztül kapcsolódtak össze, 

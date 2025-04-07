@@ -1,16 +1,86 @@
 \chapter{Komponensek megvalósítása}
 
-\section{Eszközök}
+\section{Végpontok}
 
-\subsection{Végpontok}
+\subsection{Autótöltő}
 
-\subsubsection{Autótöltő}
+\subsubsection{Bevezetés}
+A rendszer egy ESP8266 mikrokontroller köré épül, amely két elsődleges funkciót lát el:
+\begin{itemize}
+    \item Árammérés: Folyamatosan méri az autótöltők által felvett elektromos áramot. Összegyűjti és a Prometheus, 
+    egy népszerű nyílt forráskódú felügyeleti rendszerrel kompatibilis formátumban jelenti ezeket a mérési adatokat, 
+    hogy a rendszerben egységes adatstruktúrákat használjunk.
+    \item Vezérlő interfész: Emellett olyan mechanizmust biztosít, ami Modbus parancsokon keresztül vezérli az 
+    autótöltőket.
+\end{itemize}
 
-\subsubsection{Megszakító}
+\subsubsection{Megvalósítás}
+Itt az ESP8266 firmware főbb részeit elemzem.
+\paragraph{WiFi és HTTP-kiszolgáló beállítása}
+Kezdésnek az ESP8266 csatlakozik WiFi-re és ezzel a helyi hálózatra a megadott SSID és jelszóval. 
+A csatlakozást követően az eszköz az ESP8266WebServer könyvtár segítségével inicializál egy HTTPS-kiszolgálót. 
+Ez a szerver egy kijelölt porton (pl. 8663) figyel, és a /metrics végpontot teszi közzé, 
+ahol közli az adatokat a központ vezérlővel.
 
-\subsection{Kontroll szerver}
+\subsubsection{Mérési adatok elküldése}
 
-\subsection{Adatbázis}
+A \texttt{sendMetricsToEndpoint()} függvény formázza a méréseket Prometheus-szerű szöveges formába. A metrikák a következőket tartalmazzák:
+
+\begin{itemize}
+  \item \textbf{esp8266\_current0}: A mért áramértéket mutatja.
+  \item \textbf{esp8266\_connection}: Az ESP8266 kapcsolati állapotát jelzi, pl.: csatlakozva vagy nem.
+\end{itemize}
+
+Ez a funkció a Prometheus-kompatibilis mért érték és címkézési formátummal küldi el a mérést. 
+Amikor például a vezérlő szerver lekéri a \texttt{/metrics} végpontot, a HTTPS-kiszolgáló 
+\texttt{200 OK} státusszal küldi vissza ezeket a formázott metrikákat, amennyiben minden rendben ment.
+
+\subsubsection{Main loop}
+A loop() funkcióban az ESP8266 folyamatosan kezeli a bejövő HTTPS kéréseket és 30 másodpercenként 
+az eszköz meghívja a queryPrometheus() függvényt, hogy frissítse az összesített metrikát. 
+Ez az időszakos lekérdezési mechanizmus biztosítja, hogy a helyi mérések folyamatosan frissek 
+legyenek és döntéshozatal alapjául lehessen venni őket.
+
+\subsubsection{Kommunikáció}
+A rendszer itt is a biztonságos adatátvitel érdekében minden hálózati kommunikációhoz HTTPS protokollt használ. 
+A legfontosabb adatáramlások a következők:
+
+\begin{itemize}
+    \item \textbf{Mérések közzététele:} Az ESP8266 összegyűjti az aktuális méréseket, és azokat a /metrics 
+    végponton olyan formátumban teszi elérhetővé, ami már alkalmas Prometheus alapú adattárolásra.
+    
+    \item \textbf{Visszacsatolási hurok:} Az ESP8266 vezérlési értékeket kap a szervertől, amiket aztán modbuson 
+    ad tovább az eszközöknek.
+\end{itemize}
+
+\subsubsection{Modbus kommunikáció vezérléshez}
+Ez a funkció az autó töltő áramhatárának beállítására szolgál. 
+Az itt használt Modbus RTU használatával az ESP8266 lesz a master, ami „Write Single Register” 
+parancsot ad az autó töltőnek (Modbus slave). Az autós töltő áramkorlátja egy előre meghatározott 
+regiszterben található.
+
+\paragraph{Hardver}
+
+\begin{itemize}
+    \item \textbf{RS485:}
+    Az ESP8266 natívan nem támogatja az RS485 kommunikációt, viszont tudunk használni egy RS485 adó-vevőt 
+    (pl. MAX485). Ez az ESP8266 UART jeleit RS485-re alakítja, ami az ipari kommunikációban elterjedt szabvány, 
+    ezért jellemzően a töltőkben és egyéb épületinformatikai eszközökben is megtalálható.
+    \item \textbf{ModbusMaster könyvtár:}
+    Itt az open source ModbusMaster könyvtárat \cite{ModbusMaster} használtam a továbbítás egyszerűsítésére.
+    \item \textbf{Átviteli vezérlés:}
+    Az előbb említett adó-vevőnek szüksége van egy úgynevezett DE/RE (Driver Enable/Receiver Enable) vezérlőpinre. 
+    Amit viszont egyszerű megvalósítani az ESP8266-on egy digitális pin segítségével amire itt a D2 lett használva. 
+    Ezzel tudunk később adó és vevő módok között kapcsolni. Küldéshez a pin HIGH (adási mód), ezután a 
+    vételhez, pedig (vételi mód) állapotba kerül, ekkor LOW.
+\end{itemize}
+
+
+\subsection{Megszakító}
+
+\section{Kontroll szerver}
+
+\section{Adatbázis}
 
 A rendszer által generált adatok tárolásához egy Prometheus adatbázist használok. 
 A Prometheus egy nyílt forráskódú idősoros adatbázis, ami inkább felhő környezetben ismert, 
@@ -53,7 +123,7 @@ indexelve tárolja. Ez a lehívás alapú felügyelet jól illeszkedik a Prometh
 A Prometheus adatai megjeleníthetők a Grafana által is és összetett lekérdezések írhatók 
 például a teljes áram kiszámítására, amihez szükségem is volt nekem rendszer irányítsásához.
 
-\subsubsection{Prometheus adatgyűjtés kezelése}
+\subsection{Prometheus adatgyűjtés kezelése}
 
 A mikrokontroller több metrikát is mér, 
 amit belső változókba elment. Jelenleg teszt célokból ezek, csak kézzel megadott számok.
@@ -77,7 +147,7 @@ A formátumot a következő függvény hozza létre és küldi:
     server.send(200, "text/plain", metrics);
 \end{lstlisting}
 
-\subsubsection{Prometheus lekérdezések kezelése}
+\subsection{Prometheus lekérdezések kezelése}
 
 \begin{lstlisting}[language=C]
     queryPrometheus()
@@ -133,4 +203,4 @@ A fenti rész kinyeri az adatot JSON formátumból és szám formátumba írja.\
 Természetesen az egész queryPrometheus loop-ban ismétlődve fut, hogy a kontroller folyamatosan frissítse az értékeket. 
 Jelenleg a gyakoriságot 30 másodpercre állítottam, hogy ne terhelje a próbák során feleslegesen a hálózatot, 
 de gyorsabb válaszidő érdekében ez növelhető.
-\subsection{Megjelenítés}
+\section{Megjelenítés}
