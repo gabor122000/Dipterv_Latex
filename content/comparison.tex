@@ -61,5 +61,60 @@ mint az előzőleg taglalt rendszer.\cite{sieEMS}
 
 \section{Saját megoldás}
 
-A dolgozatom további részében hasonló rendszer kidolgozásán szeretnék dolgozni, ami lehetőleg tartalmazza
-ezeket a képességeket. Sőt lehetőleg meg is haladja őket és árban is sokkal versenyképesebb mint ezek a rendszerek.
+Egy mondatban: a saját eszközkészletem (ESP-8266 + Prometheus + Grafana + Python) 
+sokkal  olcsóbb és könyebben módosítható, de a Schneider 
+EcoStruxure Power Monitoring Expert (PME) és a Siemens SIMATIC Energy Suite 
+olyan pontosságot, energiaminőség-elemzést, ISO-50001-megfelelőséget és 24/7-es 
+gyártói támogatást biztosít, aminek megvalósítása nagy munkát és pénzt igényelne.
+
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|P{2.5cm}|P{3.5cm}|P{3.5cm}|P{3.5cm}|}
+    \hline
+    \textbf{Jellemző} & \textbf{Nyílt forráskódú megoldás} & \textbf{Schneider PME} & \textbf{Siemens Energy Suite} \\
+    \hline
+    Peremi eszközök &
+    ESP8266 + CT &
+    PowerLogic / ION \& PowerTag mérők, megszakítók, átjárók &
+    S7-1500 PLC + Sentron PAC, 7KM PAC, megszakítók \\
+    \hline
+    Adatátvitel &
+    Wi-Fi és HTTPS REST &
+    Modbus/TCP &
+    PROFINET\\
+    \hline
+    Adatbázis &
+    Prometheus &
+    Beépített SQL Express &
+    Integrált WinCC SQL archívum \\
+    \hline
+    Vizualizáció &
+    Grafana &
+    Webalapú HTML5 irányítópult &
+    WinCC HMI képernyő \\
+    \hline
+    Analitika &
+    Ami lekódolásra kerül &
+    Harmonikus, villódzás, EN 50160 megfelelés &
+    Automatikus terheléskikapcsolás ISO 50001 \\
+    \hline
+    Licenc költségek &
+    Nincs &
+    Eszközcsomagok: 5-től korlátlanig; 50-es csomag tízezer eurós nagyságrend &
+    Futtatási licenc eszközönként ezer eurós nagyságrend \\
+    \hline
+    Tipikus ár 50 mérőpontra &
+    kb. 1 000 € (panelek + szenzorok + szerver) &
+    kb. 10 ezer € (mérők + licenc + szerver) &
+    kb. 10 ezer € (mérők, PLC, licencek, TIA Portal) \\
+    \hline
+    Támogatás &
+    Közösségi támogatás; nincs hivatalos tanúsítvány &
+    Gyártói 24/7, ISO 50001 &
+    Gyártói 24/7, TÜV EN 13849 \\
+    \hline
+    \end{tabular}\caption{Rendszeráttekintés - összehasonlítás}
+    \label{tab:osszehasonlitas}
+\end{table}

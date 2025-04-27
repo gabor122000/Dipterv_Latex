@@ -203,4 +203,61 @@ A fenti rész kinyeri az adatot JSON formátumból és szám formátumba írja.\
 Természetesen az egész queryPrometheus loop-ban ismétlődve fut, hogy a kontroller folyamatosan frissítse az értékeket. 
 Jelenleg a gyakoriságot 30 másodpercre állítottam, hogy ne terhelje a próbák során feleslegesen a hálózatot, 
 de gyorsabb válaszidő érdekében ez növelhető.
-\section{Megjelenítés}
+
+\section{Grafana alapú megjelenítés}
+
+A szerver automatikusan beavatkozik szükséges esetben, viszont emellett továbbra 
+is szükséges a működtető személyzetnek látnia, a rendszer működését. Ezt folyamatosan 
+ellenőrizni és amennyiben nem megfelelő működés lép fel. Akár nem működik az 
+automatizmus akár rosszul működik, szükséges beavatkozni manuálisan.
+
+\subsection{A háromfázisú és a napelemes áram vizualizálása és riasztása a Grafanában}
+Ebben a fejezetben bemutatom, hogy a nyers árammérések az egyes EV-töltők és 
+egyéb terhelések hogyan oszlanak meg három fázison, valamint a napelemek 
+bemeneti áramai hogyan jelennek meg Grafanában, és hogyan történik a 
+túláram vagy más veszélyes állapotok automatikus vagy manuális kezelése. 
+Minden eszköz a Prometheus metrikákat exportálja a következőképpen:
+
+\begin{lstlisting}
+ev_charger_current_phase_a_amplitude{charger="ev1"} 12.3
+ev_charger_current_phase_b_amplitude{charger="ev1"} 11.8
+ev_charger_current_phase_c_amplitude{charger="ev1"} 12.1
+
+equipment_current_phase_a_amplitude{device="pump1"} 5.4
+... 
+
+solar_input_current_amplitude 8.7
+\end{lstlisting}
+
+\subsubsection{A Dashboard}
+\paragraph{1. sor}
+EV töltők áramai amik a
+\$charger változóval vannak jelölve, ez felsorolja az összes ide  tartozó cimke értékét 
+(pl. „ev1”, „ev2”, ...).
+Ezután az idősoros panel: ábrázolja az összegzett értéket három fázison.
+\begin{lstlisting}
+    ev_charger_current{charger="$charger"}
+\end{lstlisting}
+Itt ugyanazon a tengelyen láthatóak a három fázis összegzett értékei, 
+különböző színnel és elnevezéssel.
+Az úgynevezett "mérőpanelen" a pillanatnyi fázisáramokat három kis mérő formájában
+lehet látni igazából továbbra is a a fenti lekérdezésseket használva, 
+pillanatnyi csak üzemmódban.
+A küszöb értékeket állítottam be a könnyeb vizualizáció érdekében 
+a töltő névleges áramának, 
+80 \%-ánál (sárga) és 100 \%-ánál (piros) vannak beállítva.
+
+\paragraph{2. sor}
+Segédberendezések áramai
+A \$device változóban keressük ezeket a metrikákat.
+
+A panel hasonlóan az előző ponthoz jeleníti meg az adatokat, amely a pillanatnyi 
+és max értéket mutatja.
+\begin{lstlisting}
+    max_over_time(equipment_current_phase_a_amplitude{device="\$device"}[1m])
+\end{lstlisting}
+A maximumot minden fázisra az elmúlt percben mutatja, az idetartozó 
+megfelelő színküszöbökkel.
+Mellette raktam egymás mellé csoportosító oszlopdiagramot a gyors 
+összehasonlításokra.
+

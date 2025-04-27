@@ -159,3 +159,109 @@ Telepítéséhez a következő parancsot használjuk:
 \begin{lstlisting}
   kubectl get pods -n monitoring
 \end{lstlisting}
+
+\section{Nagy elérhetőségű rendszer implementációja}
+
+Az aktív elsődleges és meleg készenléti minta csökkenti a komplexitást és 
+emellett megbízható felügyeletet biztosít:
+
+\begin{itemize}
+  \item A Prometheus folyamatos adatreprodukciója mindent megőriz a második helyszínen.
+  
+  \item A replikán keresztül biztosított a Grafana-B azonnali használhatósága.
+  
+  \item Az átállást csak a DNS/szolgáltatás frissítési sebessége korlátozza.
+  
+  \item Ez a topológia megfelel a megbízhatósági céloknak a monitorozási környezetbe.
+  
+\end{itemize}
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=0.8\textwidth, keepaspectratio]{figures/kubernetes.png}
+  \caption{Hibrid kubernetes topológia}
+\end{figure}
+
+A Prometheus-A minden célpontot lekérdez, és elvégzi az összes értékelést.
+A Prometheus-B távoli írást kap A-tól (A hálózat felesleges terhelésének 
+elkerülése érdekében nem scrapel közvetlen).
+A Grafana-B csatlakozik a Prometheus-B-hez, és a dashboardokat inen frissíti 
+(ez közvetlenül nem érhető el).
+Egyetlen DNS név mutat az A ingressre. A Kubernetes és egy külső állapotellenőrzés 
+frissíti a DNS-t a B oldalra, amikor az A leáll.
+
+\subsection{Replikák megvalósítása}
+
+A VM-n a prometheus konfigurációja a következő képen történik.
+
+\begin{lstlisting}
+  apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-b
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: prometheus-b } }
+  template:
+    metadata: { labels: { app: prometheus-b } }
+    spec:
+      nodeSelector: { site: "b" }
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.49
+        args:
+          - --config.file=/etc/prometheus/prometheus.yml
+          - --web.enable-lifecycle
+        volumeMounts:
+          - name: data
+            mountPath: /prometheus
+        readinessProbe: { httpGet: { path: /-/ready, port: 9090 } }
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: prometheus-b-data
+---
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-b-data
+  namespace: monitoring
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: cloud-ssd
+  resources: { requests: { storage: 50Gi } }
+\end{lstlisting}
+
+Az eredeti A prometheus-ból pedig a B-be folyamatosan írunk.
+
+\begin{lstlisting}
+  remote_write:
+- url: http://prometheus-b.monitoring.svc.cluster.local:9090/api/v1/write
+  queue_config:
+    capacity: 10000
+    max_shards: 5
+    max_samples_per_send: 1000
+    batch_send_deadline: 5s
+\end{lstlisting}
+
+A grafana megvalósítása során igazából csak egy ugyanolyan deployement-et hozunk létre.
+Ez egy másolat a másikról amire ha kell áttudunk bármikor térni.
+
+\begin{lstlisting}
+  spec:
+  replicas: 1
+  template:
+    metadata: { labels: { app: grafana-b } }
+    spec:
+      nodeSelector: { site: "b" }
+      containers:
+      - name: grafana
+        image: grafana/grafana:11.0.0
+        env:
+          - name: GF_DATABASE_URL     # same secret as primary
+            valueFrom: { secretKeyRef: { name: grafana-db, key: db_url } }
+          - name: GF_SECURITY_SECRET_KEY
+            valueFrom: { secretKeyRef: { name: grafana-db, key: secret } }
+        readinessProbe:
+          httpGet: { path: /api/health, port: 3000 }
+\end{lstlisting}
