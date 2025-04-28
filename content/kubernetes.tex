@@ -162,7 +162,7 @@ Telepítéséhez a következő parancsot használjuk:
 
 \section{Nagy elérhetőségű rendszer implementációja}
 
-Az aktív elsődleges és meleg készenléti minta csökkenti a komplexitást és 
+Az aktív elsődleges és passzív készenléti minta csökkenti a komplexitást és 
 emellett megbízható felügyeletet biztosít:
 
 \begin{itemize}
@@ -265,3 +265,31 @@ Ez egy másolat a másikról amire ha kell áttudunk bármikor térni.
         readinessProbe:
           httpGet: { path: /api/health, port: 3000 }
 \end{lstlisting}
+
+\subsection{KubeADM}
+
+A projektemben a kubeadm-re támaszkodtam, hogy kubernetes klasztert készítsek a linux vm-et bevonva. 
+Ez megkönnyítette a folyamatot mert magasabb színtű tervezésre volt csak szükség és ez megoldotta magától 
+az alacsonyabb szintű problémákat.
+
+\begin{lstlisting}
+  sudo kubeadm init --config=/etc/kubeadm/config.yaml
+\end{lstlisting}
+
+Az inicializálás után csak egy tokent kellett adni a nodenak, hogy csatlakozzon a clusterhez.
+Ezután a a további folyamatokat kezelte is a Kubeadm.
+
+\begin{lstlisting}
+  sudo kubeadm join 10.200.0.1:6443 \
+    --token <token> \
+    --discovery-token-ca-cert-hash sha256:<hash>
+\end{lstlisting}
+
+Ennek köszönhetően egy hasonló rendszerben, ha a egy node meghibásodik akkor a másik átveszi a helyét és felhasználói oldalról
+nem érzünk kiesést. A helyre állítás során, pedig csak egy parancsot kell kiadnunk:
+
+\begin{lstlisting}
+  kubeadm join
+\end{lstlisting}
+
+Ezután újra csatlakoztattuk is a node-ot és újonnan felépíthetjük a clusterben.
