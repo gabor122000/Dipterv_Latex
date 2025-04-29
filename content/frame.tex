@@ -226,4 +226,59 @@ töltőkről, és regisztereket írni. Ezzel áttudtam írni a töltőben a maxi
 A képen Modbus RTU soros kommunikáció összeállítása látszik. Ebben a rendszerben Modbus TCP rendszert használunk.
 Ez igazából csak annyit csinál, hogy TCP keretekbe foglalja a már előbb felsorolt kommunikációt.
 
-\subsection{Standardizált Kommunikáció}
+\section{Standardizált rendszer}
+
+\subsection{Áttekintés}
+
+Direkt úgy állítottam össze a rendszert, hogy az moduláris, konténeres keretrendszert tudjon képezni. 
+Ez így lehetővé teszi az épületek energiagazdálkodásához szükséges komponensek gyors integrációját, 
+leginkább az EV-töltőkre és a megszakítópanelekre fókuszálva. Az adat tárolást (Prometheus), 
+vezérlő API-kat és vizualizációt (Grafana) szabványosítja ebben az esetben, hogy egyszerűsítse a 
+demo környezeteket és a termelési környezetben bevezetéseket is.
+
+\subsection{Tervezési célok és követelmények}
+
+\begin{itemize}
+    \item Plug-and-Play alkatrészek: A felhasználók új érzékelőket vagy vezérlőket önálló szolgáltatásként telepíthet, 
+    amíg az kompatibilis a keretrendszer eszközeivel.
+    \item Szabványosított mérési API: Itt egyszerűen minden komponens Prometheus-formátumú metrikákat exportál HTTPS-n 
+    keresztül.
+    \item Vezérlő: A Python-alapú ControlServer REST protokollon keresztül irányítja az eszközöket.
+    \item Konténerizált környezet: Minden mikroszolgáltatás konténerekben fut; az orchestrálást, 
+    pedig Kubernetes segítségével oldottam meg.
+    \item Skálázhatóság és bővíthetőség: Könnyedén skálázható ez a környezet , hozzá lehet adni új erőforrástípusokat, 
+    és integrálni új eszközöket, mint ütemezés vagy akár valamilyen ML elemzés.
+\end{itemize}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\textwidth, keepaspectratio]{figures/framework.png}
+    \caption{Keretrendszer architektúra}
+\end{figure}
+
+Mivel kubernetesben telepíthető a keretrendszer minden komponense konténerként fut 
+és a cluster szolgáltatásai gondoskodnak arról, hogy a Python ControlServer, az ESP8266-hoz kapcsolódó adapterek, 
+valamint a Prometheus és Grafana mindig elérhetők és skálázhatók legyenek.
+
+A Python ControlServer egy Deployment formájában jön létre, ezt egy Service köti össze a belső hálózaton belül. 
+A Deployment manifest-jében TLS tanúsítványokat tartalmazó Secret hivatkozik a HTTPS tanúsítványokra, 
+így minden REST hívás titkosított csatornán zajlik. A control serveren belül a Flask alapú REST API két fő végpontot kínál: 
+az egyik a /metrics, ami Prometheus kompatibilis formátumban szolgáltatja az aktuális fogyasztási metrikákat, 
+a másik pedig a vezérlőhívások fogadására van fenntartva ahol lehet új áramkorlátokat beállítani az EV töltők számára.
+
+Az ESP8266 szenzorok microservice-ként jelennek meg a rendszerben: mindegyik egy Deployment, 
+ami tartalmazza a hardverrel kommunikáló sorospor adaptert. 
+Ezek a podok HTTPS-en jelentkeznek be a ControlServernél, és folyamatosan kiszolgálják a /metrics végpontjukat. 
+A Prometheus-ban lekonfiguráljuk, hogy a Prometheus scrapper felvegye őket a targetek közé. 
+A felhasználó, ha új eszközt telepít és megadja a prometheus.io/scrape: "true" és prometheus.io/path: "/metrics" értékeket. 
+Így plug and play módon csatlakozható tetszőleges új érzékelők vagy vezérlők.
+
+A Prometheus egy StatefulSet formájában fut és PersistentVolumeClaim segítségével tárolja el az adatbázist, 
+így újraindítás esetén se vesznek el az adatok. A scrape konfiguráció paraméterezését ConfigMapben lehet megtenni. 
+A Grafana Deployment mellé szintén egy PVC került a dashboard-ok mentéséhez 
+és ConfigMapeken keresztül lehet dashboard-okat definiálni. Az útválasztó SSL-terminációja 
+után a felhasználó hozzá fér az irányítópulthoz.
+
+A skálázhatóságot HorizontalPodAutoscaler biztosítja: ha egy pod CPU- vagy memóriahasználata átlépi a beállított küszöböt, 
+Kubernetes automatikusan podokat indít. Ez a felépítés lehetővé teszi, 
+hogy a cluster pillanatnyi terhelésének megfelelően bővítsük a kapacitást, akár kibőtve külső linux VM-re.
