@@ -107,6 +107,12 @@ Lényegében az érzékelő két vezetéke csatlakozik: az egyik az ADC bemeneth
 a másik pedig a középponthoz körülbelül 1,65 V a 3,3 V-os táp miatt.
 \cite{openenergymonitor}
 
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\textwidth, keepaspectratio]{figures/NodeMCU-Devkit-Pinouts.png}
+    \caption{Pinout \cite{electronicwings_nodemcu2023}} 
+\end{figure}
+
 Mindegyik ESP8266 tápellátást kap lehetőleg 5 V-os USB-adapterrel az EV-töltő kiegészítő tápellátásával 
 és az analóg bemeneten keresztül olvassa le a CT-érzékelőjét.
 A mikrokontroller a megírt kódot futtatja, csatlakozik a Wi-Fi-hez, és folyamatosan méri az áramerősséget. 

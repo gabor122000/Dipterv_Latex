@@ -14,6 +14,12 @@ A rendszer egy ESP8266 mikrokontroller köré épül, amely két elsődleges fun
     autótöltőket.
 \end{itemize}
 
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.5\textwidth, keepaspectratio]{figures/EVLINK.png}
+    \caption{Autótöltő \cite{SE:EVLINK}} 
+\end{figure}
+
 \subsubsection{Megvalósítás}
 Itt az ESP8266 firmware főbb részeit elemzem.
 \paragraph{WiFi és HTTP-kiszolgáló beállítása}
@@ -77,6 +83,44 @@ regiszterben található.
 
 
 \subsection{Megszakító}
+\subsubsection{Hardver}
+
+A felügyelet- és vezérlésben minden megszakító egy ESP8266 modulhoz van csatlakoztatva, 
+ami megkapja az aktuális állapotot, és ki-/bekapcsolást tud végezni. 
+Legfontosabb komponensek és munkafolyamatok:
+\begin{itemize}
+    \item Állapotérzékelés: Az ESP8266 digitális bemenete a megszakító egy 
+    segédérintkezőjéhez van kötve. Ha a megszakító zárva van, az érintkező bezár 
+    és az ESP bemenetét magasra húzza, ha nyitva van, a bemenet alacsony. 
+    Egy sima RC-szűrő és szoftveres pergésmentesítéssel (pl. 50 ms) lehet biztosítani
+    a tiszta és zaj mentes átmeneteket.
+    \item Parancskimenet: Egy GPIO pin egy relét húz meg, ami a megszakító 
+    kioldó/becsukó tekercsét aktiválja.
+\end{itemize}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.5\textwidth, keepaspectratio]{figures/MTZ.jpg}
+    \caption{Megszakító \cite{SE:MasterpactMTZ}} 
+\end{figure}
+
+\subsubsection{Szoftver}
+
+Az ESP8266 arduino alapokon fut, és HTTPS segítségével csatlakozik a LAN-hoz 
+Wi-Fi-n keresztül. Minden megszakító interakció RESTful API hívásokon keresztül 
+történik a Python vezérlő szerverhez:
+
+\begin{lstlisting}
+    https://<control-server>/api/breakers/<id>/state
+\end{lstlisting}
+
+\begin{lstlisting}
+    { "breaker_state": 1 }
+\end{lstlisting}
+
+A metrika mezők használatával a Python szerver fordítás nélkül le tudja képezni a 
+bejövő JSON-t a Prometheus-nak megfelelő formátumra 
+(breaker\_state és breaker\_command).
 
 \section{Kontroll szerver}
 
