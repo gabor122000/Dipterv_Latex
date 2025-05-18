@@ -2,6 +2,38 @@
 \chapter{\bevezetes}
 %----------------------------------------------------------------------------
 
-A bevezető tartalmazza a diplomaterv-kiírás elemzését, történelmi előzményeit, a feladat indokoltságát (a motiváció leírását), az eddigi megoldásokat, és ennek tükrében a hallgató megoldásának összefoglalását.
+A diplomatervem célja egy olyan keretrendszer megvalósítása, 
+amely lehetővé teszi a távoli felügyeletet és vezérlést. 
+A rendszer egyszerű felépítésű végponti elemeket 
+(például ESP8266 alapú érzékelő- és vezérlőmodulokat) köt össze 
+konténerizált vezérlőkomponenssel. 
+A célja az adatok gyűjtése, tárolása és automatizált feldolgozása, 
+valamint a végpontok megbízható kezelésének és redundanciájának 
+biztosítása Kubernetes környezetben.
+\paragraph{}
+A villamosenergetikában az elmúlt években nagy igény jelentkezett 
+a hálózati elemek, például autótöltők vagy megszakítók valós 
+idejű felügyeletére és távoli vezérlésére. Ez fontos energiahatékonyság,
+hálózati biztonság és a zavartűrés szempontjából is. 
+A modern ipari rendszerekben alkalmazott szoftverek, 
+mint a Schneider EcoStruxure Power Monitoring Expert vagy a Siemens SIMATIC 
+Energy Suite széleskörű funkcionalitást biztosítanak, szabványoknak megfelelőséget 
+és 24/7 gyártói támogatást kínálnak, 
+de jelentősen drágábbak.
+\paragraph{}
+A munkámban bemutatni kívánt saját megoldás ezzel szemben nyílt 
+forráskódú komponensekre épít (ESP8266 mikrokontrollerek, Prometheus 
+idősoros adatbázis, Grafana vizualizáció és Python Flask vezérlőszerver), 
+ez költséghatékony és jól testre szabható az előzőkkel szemben. 
+A rendszerem moduláris felépítése miatt az érzékelők plug-and-play módon
+csatlakoztathatóak és Kubernetes 
+segíti a skálázhatóság, a redundancia és a magas rendelkezésre állást.
 
-A bevezető szokás szerint a diplomaterv felépítésével záródik, azaz annak rövid leírásával, hogy melyik fejezet mivel foglalkozik.
+A dolgozat a következő részekből áll:
+
+\begin{itemize}
+    \item \textbf{Első fejezet:} A meglévő ipari megoldások ismertetése és összehasonlítása a saját fejlesztéssel.
+    \item \textbf{Második fejezet:} A keretrendszer tervezésének bemutatása.
+    \item \textbf{harmadik fejezet:} A rendszer egyes komponenseinek részletes megvalósítása.
+    \item \textbf{Negyedik fejezet:} Nagy rendelkezésre állás megvalósítása hibrid klaszter topológiával.
+\end{itemize}
