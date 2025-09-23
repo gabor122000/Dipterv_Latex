@@ -124,7 +124,7 @@ ALLOC_MAX_TOTAL=9.0
 \end{verbatim}
 
 \noindent Várható kiosztás a 0--60 s szakaszban: mindhárom SIM korlátozott, 
-mivel a nyers összeg 150 A $>$ 9 A. 60 s után az 
+mivel az igény 150 A $>$ 9 A. 60 s után az 
 igények \texttt{[10, 10, 100]} $\Rightarrow$ kiosztás \texttt{[10, 10, 70]}. A \texttt{cap} és 
 az \texttt{effective} értékek ennek megfelelően jelennek meg az \texttt{output.txt}-ben.
 
@@ -134,7 +134,7 @@ az \texttt{effective} értékek ennek megfelelően jelennek meg az \texttt{outpu
 \section{Elméleti háttér és cél}
 
 \subsection{Motiváció és cél}
-A szimulált fogyasztók áramigénye (\(d_i\)) időben változik. 
+A szimulált fogyasztók  áramigénye (\(d_i\)) időben változik. 
 Adott egy globális, maximum áramérték \(\,B=\texttt{ALLOC\_MAX\_TOTAL}\,\) amperben, 
 ennél a tényleges összáram nem lehet nagyobb. A cél egy olyan kiosztás \(\,a_i\) meghatározása, amely
 (i) nem lépi túl az egyes igényeket (\(0\le a_i\le d_i\)),
@@ -145,9 +145,9 @@ fennmaradó kapacitás pedig egyenlő alapról oszlik meg.
 \subsection{Definíció (max--min fair)}
 Egy \(\,a=(a_1,\dots,a_n)\) kiosztás \emph{max--min fair}, ha bármely más megengedett \(\,y\) esetén, 
 ha létezik \(i\) úgy, hogy \(y_i > a_i\), akkor létezik \(j\) olyan, hogy \(a_j \le a_i\) és \(y_j < a_j\). 
-Intuíció: csak a \emph{már kisebb} részesedésűek rovására lehet növelni bárki juttatását.
+Intuíció: csak a \emph{már kisebb} részesedésűek rovására lehet növelni bárki juttatását. \cite{wiki:max-min-fairness}
 
-\subsection{Vízbetöltés (water-filling)}
+\subsection{Feltöltés (water-filling)}
 A max--min fair kiosztás felírható egyetlen paraméterrel:
 \begin{equation}
   a_i = \min\{\,d_i,\ \lambda\,\}, \qquad \text{ahol }\ \sum_{i=1}^n \min\{d_i,\lambda\} \;=\; B.
@@ -173,7 +173,7 @@ iteratív \emph{progresszív} algoritmus fut, amely kis elemszámon szintén gyo
     \centering
     \includegraphics[width=1\textwidth]{figures/Principle-of-Water-Filling-algorithm-76.png}
     \caption{Water-filling elve telekomunikációban. \cite{Slacik2021Sensors}}
-    \label{fig:siemens-ems}
+    \label{fig:water-filling}
 \end{figure}
 
 \subsection{Tulajdonságok}
@@ -187,9 +187,9 @@ iteratív \emph{progresszív} algoritmus fut, amely kis elemszámon szintén gyo
 \section{A vezérlőben alkalmazott megvalósítás}
 
 \subsection{Kapcsolat a rendszer komponenseivel}
-A vezérlő \emph{nyers} igényekből (\texttt{raw\_current}) számolja a cap-eket a fenti elv szerint 
+A vezérlő igényekből (\texttt{raw\_current}) számolja a limiteket a fenti elv szerint 
 a \texttt{ALLOC\_MAX\_TOTAL} kereten. A \emph{megszakító} (breaker) logika ettől független, 
-a \emph{mért, hatásos} összághoz viszonyít (\texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}) 
+a \emph{mért, tényleges} áramhoz viszonyít (\texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}) 
 biztonsági rétegként.
 
 \subsection{Példák}
@@ -200,64 +200,57 @@ biztonsági rétegként.
 három felé oszlik: \(a=[3,\,7.33,\,7.33,\,7.33]\) A.
 
 \subsection{Implementációs részletek}
-A cap-ek csak \(\pm 10^{-3}\) A változás felett frissülnek a SIM-ek felé (zajcsillapítás), 
-a „nincs korlát” állapotot nagy \(\texttt{INF\_CAP}\) érték reprezentálja. Ha a nyers összeg a keret alá esik, 
-a cap-ek feloldódnak.
+A limitek csak \(\pm 10^{-3}\) A változás felett frissülnek a fogyasztók felé (zajcsillapítás), 
+a „nincs korlát” állapotot nagy \(\texttt{INF\_CAP}\) érték reprezentálja. Ha a nyers igény összeg a keret alá esik, 
+a limitek feloldódnak.
 
 % =====================================================================
 
 \chapter{Fejlesztői panel (Dev Panel)}
 
 \section{Cél és szerep}
-A Dev Panel egy könnyű, belső használatú webes felület, amely a szöveges bemenetek és kimenetek kezelését, 
+A Dev Panel egy könnyű használatú webes felület, amely a szöveges bemenetek és kimenetek kezelését, 
 a futtatás indítását/megállítását, az idő nullázását és a napló törlését teszi lehetővé. Célja 
 a \emph{gyors kísérletezés} és a \emph{reprodukálható} tesztfutások támogatása külön eszközök nélkül.
 
 \section{Architektúra áttekintése}
 A panel egy Flask-alapú backendből (\texttt{/api/*}) és statikus frontendből (HTML+CSS+JS) áll. 
-A backend közvetlenül a \texttt{./data} kötetben lévő fájlokat kezeli (atomikus írással), 
-és hálózaton hívja a SIM konténerek belső \texttt{/reset\_time} végpontjait. A vezérlő külön, 
+A backend közvetlenül a \texttt{./data} mappában található fájlokat kezeli, 
+és hálózaton hívja az esp-t szimuláló konténerek végpontjait. A vezérlő külön, 
 a saját portján (\(8000\)) fut; a Prometheus és Grafana eléréséhez gyorslinkek állnak rendelkezésre.
 
 \section{Fő funkciók és munkamenet}
-\paragraph{Start/Stop.} A \texttt{sim\_control.txt} állományba írja a panel 
-a \texttt{RUNNING}/\texttt{STOPPED} értéket. STOP módban a SIM-ek virtuális ideje megáll, 
-a vezérlő nem küld cap-et és nem kapcsol megszakítót, csak mér és naplóz.
-\paragraph{Reset (t=0).} A panel a STOP beállítás után meghívja minden SIM \texttt{/reset\_time} 
-végpontját; a virtuális idő nulláról indul (RUNNING állapotban onnantól ismét telik).
+\paragraph{Start/Stop.} A \texttt{sim\_control.txt} fájlba írja a panel 
+a \texttt{RUNNING} vagy \texttt{STOPPED} értéket. STOP módban az esp szimulátorok virtuális ideje megáll, 
+a vezérlő nem küld max értékeket és nem kapcsol megszakítókat, csak mérést és naplózást végez.
+\paragraph{Reset (t=0).} A panel a STOP beállítás után meghívja minden esp szimulátor \texttt{/reset\_time} 
+végpontját, a virtuális idejük nulláról indul újra.
 \paragraph{Clear output.txt.} A \texttt{data/output.txt} törlése. A vezérlő a következő ciklusban 
 automatikusan újra létrehozza a fejlécet és folytatja a naplózást.
 \paragraph{Thresholds szerkesztés.} A \texttt{thresholds.txt} beolvasása/írása a panelről: 
 \texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}, \texttt{ALLOC\_MAX\_TOTAL}.
-\paragraph{Menetrend-generátor.} Konstans, rámpa, lépcső, szinusz és random walk idősorok képezhetők 
-a \texttt{esp\{1..3\}\_schedule.txt} fájlokba (formátum: \texttt{seconds\ \ \ amps}). 
+\paragraph{Menetrend-generátor.} Konstans, fel- és lefutás, lépcső, szinusz és random walk idősorok képezhetők 
+a \texttt{esp\{x\}\_schedule.txt} fájlokba (formátum: \texttt{seconds\ \ \ amps}). 
 A generált tartalom előnézetben ellenőrizhető.
 \paragraph{Raw editor \& Letöltés.} Tetszőleges bemeneti fájl közvetlen szerkeszthető; 
-az \texttt{output.txt} csak olvasható. Minden bemenet és a kimenet letölthető archíváláshoz.
+az \texttt{output.txt} csak olvasható. Minden be- és a kimenet letölthető megőrzéshez.
 
-\section{Backend API (rövid kivonat)}
+\section{Backend API (elérések)}
 \begin{center}
 \begin{tabular}{ll}
 \hline
 \textbf{Végpont} & \textbf{Funkció} \\
 \hline
-\texttt{GET\ /api/read?name=...} & Fájl beolvasása (csak engedélyezett lista) \\
-\texttt{POST\ /api/write} & Fájl írása (atomikus csere, \texttt{output.txt} kivétel) \\
+\texttt{GET\ /api/read?name=...} & Fájl beolvasása \\
+\texttt{POST\ /api/write} & Fájl írása \\
 \texttt{GET\ /api/download?name=...} & Közvetlen letöltés \\
 \texttt{GET\ /api/sim\_state} & Globális állapot lekérdezése \\
 \texttt{POST\ /api/sim\_state} & RUNNING/STOPPED beállítása \\
 \texttt{POST\ /api/clear\_output} & \texttt{output.txt} törlése \\
-\texttt{POST\ /api/reset\_sim\_time} & Minden SIM időnullázása \\
+\texttt{POST\ /api/reset\_sim\_time} & Minden szimulátor időnullázása \\
 \hline
 \end{tabular}
 \end{center}
-
-\section{Megbízhatósági és használhatósági szempontok}
-\begin{itemize}
-  \item \textbf{Atomikus írás:} ideiglenes fájl + átnevezés, így elkerülhetők a félig írt állapotok.
-  \item \textbf{Önjavító napló:} a vezérlő törlés után fejlécet generál, a naplózás folytatódik.
-  \item \textbf{Deklaratív bemenet:} minden konfiguráció egyszerű, verziózható szövegfájl.
-\end{itemize}
 
 \section{Biztonsági és korlátok}
 A panel \emph{belső} használatra készült. Nincs többfelhasználós jogosultság- és CSRF-kezelés; 
@@ -265,14 +258,14 @@ A panel \emph{belső} használatra készült. Nincs többfelhasználós jogosult
 a végpontok nem tesznek lehetővé tetszőleges fájlhozzáférést.
 
 \section{Kiterjeszthetőség}
-A panel könnyen bővíthető: pl.\ súlyozott fair-elosztás bemenete (\texttt{weights.txt}), 
+A panel könnyen bővíthető új be- és kimenetekkel: pl.\ súlyozott fair-elosztás bemenete (\texttt{weights.txt}), 
 előre definiált menetrend-sablonok, vagy beépített grafikon a \texttt{output.txt} vizualizálására. 
 A funkcionalitás változtatása különösen egyszerű, mivel az állapot \emph{szöveges fájlokban} 
-van deklarálva, és a vezérlő \emph{idempotens} módon dolgozza fel.
+van deklarálva.
 
-\section*{Összegzés}
-A Dev Panel egységes bejáratot ad a szöveges I/O-hoz és a futtatási műveletekhez, miközben
-a max--min fair elosztás biztosítja, hogy a rendelkezésre álló keret igazságosan 
-és determinisztikusan oszoljon meg a szimulált fogyasztók között. 
-A megoldás kifejezetten kutatási és tesztelési használatra optimalizált: egyszerű, átlátható, 
-és könnyen megismételhető futásokat tesz lehetővé.
+\begin{figure}
+    \centering
+    \includegraphics[width=1\textwidth]{figures/devpanel.png}
+    \caption{Devpanel}
+    \label{fig:devpanel}
+\end{figure}
