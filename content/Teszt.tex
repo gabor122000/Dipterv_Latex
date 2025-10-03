@@ -263,9 +263,148 @@ előre definiált menetrend-sablonok, vagy beépített grafikon a \texttt{output
 A funkcionalitás változtatása különösen egyszerű, mivel az állapot \emph{szöveges fájlokban} 
 van deklarálva.
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{figures/devpanel.png}
     \caption{Devpanel}
     \label{fig:devpanel}
 \end{figure}
+
+% =====================================================================
+
+\section{Dev Panel módosítások}
+
+\subsection{Motiváció és cél}
+A fejlesztői panelt a készítésnek ebben a fázisában úgy bővítettem, hogy a tesztesetek egy 
+kattintással reprodukálhatóak legyenek, a kézi teszt generátor pedig ugyanazon a felületen, 
+azonnali futtatással történjen és opciót adjon a kimentésre . A fő cél: 
+\emph{egységes teszteset kezelés} (presetek, és könnyen generálható egyedi scenariók), 
+\emph{automatizált tesztelés}, és \emph{idősoros megfigyelés} egy nézetben.
+
+\subsection{Fő fejlesztések}
+\begin{itemize}
+  \item \textbf{Egységesítettem a \emph{Scenarios} kártyát} három füllel: \emph{Presets}, 
+  \emph{Builder}, \emph{Files}.
+  \item \textbf{Auto Test Runner}: beépített demók (presetek) egy kattintással futtathatóak, 
+  illetve betölthető és kimenthető JSON-ba egy teljes scenarió.
+  \item \textbf{Összevont szerkesztés}: a menetrend-generátor és a nyers szövegszerkesztő panelt 
+  egységesítettem (\emph{Builder}).
+  \item \textbf{Scenarió-könyvtár}: megvalósítottam a teljes tesztet magába foglaló
+  JSON mentését sajátgépre vagy szerverre. 
+  (\texttt{/data/scenarios/}).
+  \item \textbf{Atomikus írás és állapotkezelés}: bemeneti fájlok biztonságos felülírása, 
+  \texttt{sim\_control.txt} kezelés, opcionális \emph{reset} és naplótörlés.
+  \item \textbf{Élő grafikon és gyorshivatkozások}: valós idejű összáram és 
+  szimulátoronkénti külön görbe, 
+  közvetlen linkek is itt találhatóak meg a \texttt{/status}, 
+  \texttt{/metrics}, Prometheus, Grafana nézetekhez.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/devpanel_v2.png}
+    \caption{Devpanel v2}
+    \label{fig:devpanel}
+\end{figure}
+
+\subsection{Felépítés és API változások}
+A Dev Panel backend része új végpontokkal bővült, ezek:
+\begin{itemize}
+  \item \verb|POST /api/run_scenario| \;-\; teljes scenarió alkalmazása 
+  (küszöbök + menetrendek + vezérlési opciók).
+  \item \verb|GET/POST /api/read|, \verb|/api/write| \;-\; bemeneti állományok (txt) kezelése.
+  \item \verb|POST /api/clear_output|, \verb|POST /api/reset_sim_time|, 
+  \verb|POST /api/sim_state|.
+  \item \verb|GET /api/list_scenarios|, \verb|GET /api/read_scenario|, 
+  \verb|GET /api/download_scenario|, \verb|POST /api/save_scenario_json|, 
+  \verb|DELETE /api/delete_scenario|.
+\end{itemize}
+
+\begin{comment}
+
+A \emph{scenario} JSON séma tömören:
+\begin{verbatim}
+{
+  "name": "My Demo",
+  "thresholds": {
+    "BREAKER_MAX_TOTAL": 12,
+    "BREAKER_MIN_TOTAL": 2,
+    "ALLOC_MAX_TOTAL": 9
+  },
+  "schedules": {
+    "esp1": [[0, 50], [60, 10]],
+    "esp2": [[0, 50], [60, 10]],
+    "esp3": [[0, 50], [60, 100]]
+  },
+  "control": {
+    "reset_time": true,
+    "clear_output": true,
+    "start_after_load": true
+  }
+}
+\end{verbatim}
+
+A \verb|/api/run_scenario| hívás menete:
+\begin{enumerate}
+  \item \texttt{sim\_control.txt} \(\rightarrow\) \texttt{STOPPED}.
+  \item Opcionális \texttt{output.txt} törlés, SIM idők \emph{reset}.
+  \item \texttt{thresholds.txt}, \texttt{esp\{1..3\}\_schedule.txt} atomikus írása.
+  \item Végállapot: \texttt{RUNNING} vagy \texttt{STOPPED} (opciótól függően).
+\end{enumerate}
+
+\subsection{UI szervezés (\emph{Scenarios} kártya)}
+\paragraph{Presets.} Előre definiált demók (smoke test, under budget, fair split 3/3/3, 
+dinamikus újraelosztás, hiszterézis, STOPPED invariánsok) futtatása opciókkal: 
+\emph{Reset t=0}, \emph{Clear output.txt}, \emph{Start after load}. Külső JSON is betölthető/futtatható.
+
+\paragraph{Builder.} Küszöbök (\texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}, 
+\texttt{ALLOC\_MAX\_TOTAL}) és vezérlési opciók mellett három szerkesztőablak az 
+\texttt{esp1/2/3} menetrendekhez. Menetrend-generátor 
+(állandó, rámpa, lépcső, szinusz, random walk) \emph{Insert/Overwrite} móddal. Két fő akció:
+\begin{compactitem}
+  \item \emph{Apply to files}: csak fájlok írása (nem indul a szimuláció).
+  \item \emph{Run now}: fájlok írása és azonnali futtatás az opciók szerint.
+\end{compactitem}
+Export: \emph{Export JSON} (letöltés) és \emph{Save JSON on server}.
+
+\paragraph{Files.} Gyors letöltések a txt-állományokhoz, illetve a szerveren tárolt 
+scenariók listája (futtatás, letöltés, betöltés a Builderbe, törlés).
+
+\subsection{Megbízhatósági és üzemeltetési szempontok}
+\begin{itemize}
+  \item \textbf{Atomikus fájlcsere}: ideiglenes állományra írás, majd \emph{rename} 
+  minimalizálja a félbemaradt módosítások kockázatát.
+  \item \textbf{Determinált sorrend}: mindig \texttt{STOPPED} állapotban történik a 
+  konfigurációváltás; a végállapot explicit.
+  \item \textbf{Idempotens futtatás}: ugyanazon scenarió többszöri lefuttatása azonos 
+  eredményre vezet, ha az input változatlan.
+  \item \textbf{Naplókezelés}: \texttt{output.txt} opcionális törlése bemutató előtt; 
+  a vezérlő a fejlécet újra létrehozza.
+\end{itemize}
+
+\subsection{Használati munkafolyamat}
+Bemutatóhoz javasolt lépések:
+\begin{enumerate}
+  \item \emph{Presets}: kiválasztás \(\rightarrow\) opciók 
+  (\emph{Reset/Clear/Start}) \(\rightarrow\) \emph{Run preset}.
+  \item \emph{Builder}: finomhangolás, egyedi menetrend generálása/szerkesztése 
+  \(\rightarrow\) \emph{Run now}.
+  \item \emph{Export/Save}: scenarió JSON letöltése vagy mentése a szerverre 
+  későbbi reprodukció céljából.
+  \item \emph{Files}: \texttt{output.txt} letöltése, log-részletek beillesztése a jegyzőkönyvbe.
+\end{enumerate}
+
+\subsection{Korlátok és jövőbeli bővítések}
+\begin{itemize}
+  \item Validációk bővítése (pl. negatív időpontok/áramok tiltása, maximum hossz ellenőrzése).
+  \item Verziózott scenarió-séma (\texttt{schema\_version}) és kompatibilitási ellenőrzés.
+  \item \emph{Batch} futtató: több scenarió egymás utáni automatikus lefuttatása időzítve.
+  \item Jogosultság és hitelesítés a Dev Panel író végpontjain (ha éles közegben használjuk).
+\end{itemize}
+
+\subsection*{Összegzés}
+Az új Dev Panel funkcionalitás egyetlen, áttekinthető kártyában egyesíti a 
+demonstrációkhoz szükséges eszközöket: előre beállított demók, testre szabható scenariók, 
+azonnali futtatás, állománykezelés és JSON-alapú reprodukció. Ez csökkenti a kézi lépések 
+számát, gyorsítja a tesztelést, és megkönnyíti a bemutatók egységes, megismételhető lefolytatását.
+\end{comment}
