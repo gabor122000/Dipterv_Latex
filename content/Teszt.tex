@@ -304,7 +304,7 @@ azonnali futtatással történjen és opciót adjon a kimentésre . A fő cél:
     \centering
     \includegraphics[width=1\textwidth]{figures/devpanel_v2.png}
     \caption{Devpanel v2}
-    \label{fig:devpanel}
+    \label{fig:devpanel v2}
 \end{figure}
 
 \subsection{Felépítés és API változások}
@@ -355,6 +355,13 @@ A \verb|/api/run_scenario| hívás menete:
 dinamikus újraelosztás, hiszterézis, STOPPED invariánsok) Ezek futtathatóak az említett opciókkal: 
 \emph{Reset t=0}, \emph{Clear output.txt}, \emph{Start after load}. Külső JSON is betölthető/futtatható.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/devpanel presets.png}
+    \caption{Devpanel Presets fül}
+    \label{fig:devpanel presets}
+\end{figure}
+
 \paragraph{Builder.} Max értékek (\texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}, 
 \texttt{ALLOC\_MAX\_TOTAL}) és vezérlési opciók mellett szerkesztőablakok a
 menetrendekhez. Különböző menetrend típusok választhatóak 
@@ -365,8 +372,22 @@ Kettő opció van ezután:
   \item \emph{Run now}: fájlok írása és azonnali futtatás az opciók szerint.
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/devpanel builder.png}
+    \caption{Devpanel Builder fül}
+    \label{fig:devpanel builder}
+\end{figure}
+
 \paragraph{Files.} Gyors letöltések a txt-állományokhoz, illetve a szerveren tárolt 
 scenariók listája (futtatás, letöltés, betöltés a Builderbe, törlés).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/devpanel_files.png}
+    \caption{Devpanel Files fül}
+    \label{fig:devpanel}
+\end{figure}
 
 \subsection{Használati munkafolyamat}
 A kipróbáláshoz javasolt lépések folyamata:
