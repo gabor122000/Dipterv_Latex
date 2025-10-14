@@ -1,0 +1,75 @@
+% =====================================================================
+\chapter{Max--min fair (water-filling) elosztás}
+
+\section{Elméleti háttér és cél}
+
+\subsection{Motiváció és cél}
+A szimulált fogyasztók  áramigénye (\(d_i\)) időben változik. 
+Adott egy globális, maximum áramérték \(\,B=\texttt{ALLOC\_MAX\_TOTAL}\,\) amperben, 
+ennél a tényleges összáram nem lehet nagyobb. A cél egy olyan kiosztás \(\,a_i\) meghatározása, amely
+(i) nem lépi túl az egyes igényeket (\(0\le a_i\le d_i\)),
+(ii) a teljes kereten belül marad (\(\sum_i a_i \le B\)),
+(iii) és \emph{fair} a kis igényűekkel szemben, azaz a kis igények teljesülnek először, a 
+fennmaradó kapacitás pedig egyenlő alapról oszlik meg.
+
+\subsection{Definíció (max--min fair)}
+Egy \(\,a=(a_1,\dots,a_n)\) kiosztás \emph{max--min fair}, ha bármely más megengedett \(\,y\) esetén, 
+ha létezik \(i\) úgy, hogy \(y_i > a_i\), akkor létezik \(j\) olyan, hogy \(a_j \le a_i\) és \(y_j < a_j\). 
+Intuíció: csak a \emph{már kisebb} részesedésűek rovására lehet növelni bárki juttatását. \cite{wiki:max-min-fairness}
+
+\subsection{Feltöltés (water-filling)}
+A max--min fair kiosztás felírható egyetlen paraméterrel:
+\begin{equation}
+  a_i = \min\{\,d_i,\ \lambda\,\}, \qquad \text{ahol }\ \sum_{i=1}^n \min\{d_i,\lambda\} \;=\; B.
+\end{equation}
+A \(\lambda\) \emph{vízszint} úgy választandó, hogy a keret pont kiteljen (vagy ha \( \sum_i d_i < B\), 
+akkor \(\lambda\ge \max_i d_i\), vagyis nincs korlát).
+
+\subsection{Algoritmus és bonyolultság}
+Gyakorlati, determinisztikus eljárás (progresszív töltés):
+\begin{enumerate}
+  \item Rendezzük az igényeket növekvő sorrendbe: \(d_{(1)} \le \dots \le d_{(n)}\).
+  \item Iteráljuk \(k=1..n\): feltételezzük, hogy az első \(k\) igény teljesül (\(a_{(i)}=d_{(i)}\), \(i\le k\)), 
+  és a maradék \(B_k = B - \sum_{i=1}^k d_{(i)}\) egyenlő szinten oszlik meg a még nyitott \(n-k\) elemre. 
+  A jelölt vízszint: \(\lambda_k = B_k/(n-k)\).
+  \item Ha \(\lambda_k \le d_{(k+1)}\), megtaláltuk a vízszintet: az összes hátralévő \(a_{(i)}=\lambda_k\) 
+  (és a korábbiak \(d_{(i)}\)).
+  \item Ha minden \(d_{(i)}\) teljesül és még marad keret, akkor nincs korlátozás: \(a_i=d_i\).
+\end{enumerate}
+A rendezés miatt az időbonyolultság \(O(n\log n)\). A megvalósított vezérlőben egy ekvivalens, 
+iteratív \emph{progresszív} algoritmus fut, amely kis elemszámon szintén gyors és stabil.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\textwidth]{figures/Principle-of-Water-Filling-algorithm-76.png}
+    \caption{Water-filling elve telekomunikációban. \cite{Slacik2021Sensors}}
+    \label{fig:water-filling}
+\end{figure}
+
+\subsection{Tulajdonságok}
+\begin{itemize}
+  \item \textbf{Egyenlő szint elve:} a \(\lambda\) alatti igények teljes, a \(\lambda\) 
+  felettiek \(\lambda\)-ig kapnak. Így a kis igényűek sosem szenvednek hátrányt.
+  \item \textbf{Monotonitás:} ha a keret \(B\) nő, akkor \(\lambda\) nem csökken, és senki kiosztása nem csökken.
+  \item \textbf{Határhelyzetek:} ha \(\sum_i d_i \le B\) → nincs cap (végtelen korlát). Ha \(B=0\) → minden \(a_i=0\).
+\end{itemize}
+
+\section{A vezérlőben alkalmazott megvalósítás}
+
+\subsection{Kapcsolat a rendszer komponenseivel}
+A vezérlő igényekből (\texttt{raw\_current}) számolja a limiteket a fenti elv szerint 
+a \texttt{ALLOC\_MAX\_TOTAL} kereten. A \emph{megszakító} (breaker) logika ettől független, 
+a \emph{mért, tényleges} áramhoz viszonyít (\texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}) 
+biztonsági rétegként.
+
+\subsection{Példák}
+\paragraph{Klasszikus példa.}
+\(d=[10,10,100]\), \(B=90\) \(\Rightarrow\) \(a=[10,10,70]\) (a két kicsi teljesül, a maradék egy szinten oszlik meg).
+\paragraph{Vegyes igények.}
+\(d=[3,8,8,20]\), \(B=25\) \(\Rightarrow\) rendezve az első igény (3) teljesül, a maradék \(22\) 
+három felé oszlik: \(a=[3,\,7.33,\,7.33,\,7.33]\) A.
+
+\subsection{Implementációs részletek}
+A limitek csak \(\pm 10^{-3}\) A változás felett frissülnek a fogyasztók felé (zajcsillapítás), 
+a „nincs korlát” állapotot nagy \(\texttt{INF\_CAP}\) érték reprezentálja. Ha a nyers igény összeg a keret alá esik, 
+a limitek feloldódnak.

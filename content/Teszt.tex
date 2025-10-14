@@ -1,23 +1,35 @@
-\chapter{Felhasználói felület}
+\chapter{Szöveges interfészek a szimulációhoz}
 
-\section{Szöveges be- és kimenetek a szimulációhoz}
-
-\subsection{Cél és áttekintés}
+\section{Cél és áttekintés}
 A rendszer szöveges alapú beállításra és eredménygyűjtésre alkalmas. 
 A cél, hogy a szimuláció \emph{kiegészítő eszközök} (pl.\ curl, CSV-konverzió) nélkül, 
 egyszerű szövegfájlokkal legyen vezérelhető és kiértékelhető.
 
 \noindent Rövid összefoglaló:
 \begin{itemize}
-  \item \textbf{Bemenetek:} \texttt{thresholds.txt}, \texttt{esp\{1..3\}\_schedule.txt}, \texttt{sim\_control.txt}
+\item \textbf{Bemenetek:} 
+\begin{itemize}
+  \item \texttt{thresholds.txt} - itt találhatóak meg a maximum és minimum értékek, 
+  amit elérhet különböző pontjain a rendszer.
+  \item \texttt{esp\{1..3\}\_schedule.txt} - ebben találhatóak meg a mérőpontok napirendjei.
+  \item \texttt{sim\_control.txt} - itt találhatóak meg a futtatási állapotok parancsai.
+\end{itemize}
   \item \textbf{Kimenet/napló:} \texttt{output.txt} (idősoros; egy sor = egy vezérlési ciklus)
+  Ebben található meg az összes lényeges mérőszám és állapot minden ciklusban.
   \item \textbf{Webes felület:} ``Dev Panel'' (localhost:8080) a fájlok szerkesztéséhez, generálásához, 
-  letöltéséhez, a futás indításához/megállításához, az idő nullázásához és a napló törléséhez.
+  letöltéséhez, a futás indításához/megállításához, az idő nullázásához és a napló törléséhez használható.
 \end{itemize}
 
-\subsection{Bemeneti szövegfájlok}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/kibemenet.png}
+    \caption{Interfészek}
+    \label{fig:Interfészek}
+\end{figure}
 
-\subsubsection{\texttt{thresholds.txt} -- küszöbök és maximum megengedhető áram}
+\section{Bemeneti szövegfájlok}
+
+\subsection{\texttt{thresholds.txt} -- küszöbök és maximum megengedhető áram}
 A vezérlő szerver minden ciklusban beolvassa. Kulcs--érték párok, tizedes ponttal:
 \begin{verbatim}
 # Küszöbértékek a vezérlő szerverhez
@@ -34,7 +46,7 @@ ALLOC_MAX_TOTAL=95.0      # [A] - Max áram érték
   szerint, az \texttt{ALLOC\_MAX\_TOTAL} keret figyelembevételével.
 \end{itemize}
 
-\subsubsection{\texttt{esp\{x\}\_schedule.txt} -- idősoros bemenet}
+\subsection{\texttt{esp\{x\}\_schedule.txt} -- idősoros bemenet}
 Formátum: időpillanat másodpercben + kívánt áram (A). A menetrend \emph{lépcsős}: a legutóbbi időponthoz 
 tartozó érték érvényes a következő megadásig.
 \begin{verbatim}
@@ -46,13 +58,13 @@ tartozó érték érvényes a következő megadásig.
 \noindent Irányelvek: tizedes elválasztó pont; tetszőleges szóköz; a sorok idő 
 szerint rendezve mint minden szöveges ki- és bemeneti file-ban.
 
-\subsubsection{\texttt{sim\_control.txt} -- futtatási állapot}
+\section{\texttt{sim\_control.txt} -- futtatási állapot}
 Egyetlen szó: \texttt{RUNNING} vagy \texttt{STOPPED} (Az alapértelmezés \texttt{STOPPED}). 
 A SIM-ek ``virtuális órája'' csak \texttt{RUNNING} állapotban megy.
 
-\subsection{Kimeneti szövegfájl}
+\section{Kimeneti szövegfájl}
 
-\subsubsection{\texttt{output.txt} -- idősoros kimenet}
+\subsection{\texttt{output.txt} -- idősoros kimenet}
 A vezérlő minden ciklusban \emph{egy sort} ír. A fájl alapértelmezetten \emph{append-only} 
 a véletlen szerkesztést elkerülendő; a Dev Panel ``Clear output.txt'' művelete törli amennyiben ez szükséges, 
 és a vezérlő legközelebb automatikusan újra létrehozza a fejlécet.
@@ -80,7 +92,7 @@ breakers=brk1:on,brk2:on
   \item \texttt{breakers} -- megszakítók állapota \texttt{on}/\texttt{off}, vesszővel elválasztva.
 \end{itemize}
 
-\subsection{Időkezelés és futtatás}
+\section{Időkezelés és futtatás}
 \begin{itemize}
   \item \textbf{Virtuális idő:} minden SIM saját menetrendi ideje csak \texttt{RUNNING} állapotban növekszik.
   \item \textbf{STOPPED} módban a SIM-ek ideje megáll; a vezérlő nem küld új cap-et és 
@@ -89,13 +101,13 @@ breakers=brk1:on,brk2:on
   SIM virtuális idejét nullázza (a panel előbb STOP-ra állít, majd resetel).
 \end{itemize}
 
-\subsection{Reprodukálhatóság és feldolgozhatóság}
+\section{Reprodukálhatóság és feldolgozhatóság}
 A bemenetek (küszöbök, menetrendek, futtatási állapot) verziózhatók és mellékelhetők. 
 A kimeneti \texttt{output.txt} önleíró; minden rekord tartalmazza az adott ciklus lényeges paramétereit. 
 A formátum egyszerűen feldolgozható bármely nyelven (kulcs=érték párok; \texttt{sims} és \texttt{breakers} 
 mezők jól definiált szeparátorokkal).
 
-\subsection{Rövid példa -- beállítás $\rightarrow$ kimenet (részlet)}
+\section{Rövid példa -- beállítás $\rightarrow$ kimenet (részlet)}
 
 \paragraph{thresholds.txt}
 \begin{verbatim}
@@ -128,81 +140,6 @@ mivel az igény 150 A $>$ 9 A. 60 s után az
 igények \texttt{[10, 10, 100]} $\Rightarrow$ kiosztás \texttt{[10, 10, 70]}. A \texttt{cap} és 
 az \texttt{effective} értékek ennek megfelelően jelennek meg az \texttt{output.txt}-ben.
 
-% =====================================================================
-\chapter{Max--min fair (water-filling) elosztás}
-
-\section{Elméleti háttér és cél}
-
-\subsection{Motiváció és cél}
-A szimulált fogyasztók  áramigénye (\(d_i\)) időben változik. 
-Adott egy globális, maximum áramérték \(\,B=\texttt{ALLOC\_MAX\_TOTAL}\,\) amperben, 
-ennél a tényleges összáram nem lehet nagyobb. A cél egy olyan kiosztás \(\,a_i\) meghatározása, amely
-(i) nem lépi túl az egyes igényeket (\(0\le a_i\le d_i\)),
-(ii) a teljes kereten belül marad (\(\sum_i a_i \le B\)),
-(iii) és \emph{fair} a kis igényűekkel szemben, azaz a kis igények teljesülnek először, a 
-fennmaradó kapacitás pedig egyenlő alapról oszlik meg.
-
-\subsection{Definíció (max--min fair)}
-Egy \(\,a=(a_1,\dots,a_n)\) kiosztás \emph{max--min fair}, ha bármely más megengedett \(\,y\) esetén, 
-ha létezik \(i\) úgy, hogy \(y_i > a_i\), akkor létezik \(j\) olyan, hogy \(a_j \le a_i\) és \(y_j < a_j\). 
-Intuíció: csak a \emph{már kisebb} részesedésűek rovására lehet növelni bárki juttatását. \cite{wiki:max-min-fairness}
-
-\subsection{Feltöltés (water-filling)}
-A max--min fair kiosztás felírható egyetlen paraméterrel:
-\begin{equation}
-  a_i = \min\{\,d_i,\ \lambda\,\}, \qquad \text{ahol }\ \sum_{i=1}^n \min\{d_i,\lambda\} \;=\; B.
-\end{equation}
-A \(\lambda\) \emph{vízszint} úgy választandó, hogy a keret pont kiteljen (vagy ha \( \sum_i d_i < B\), 
-akkor \(\lambda\ge \max_i d_i\), vagyis nincs korlát).
-
-\subsection{Algoritmus és bonyolultság}
-Gyakorlati, determinisztikus eljárás (progresszív töltés):
-\begin{enumerate}
-  \item Rendezzük az igényeket növekvő sorrendbe: \(d_{(1)} \le \dots \le d_{(n)}\).
-  \item Iteráljuk \(k=1..n\): feltételezzük, hogy az első \(k\) igény teljesül (\(a_{(i)}=d_{(i)}\), \(i\le k\)), 
-  és a maradék \(B_k = B - \sum_{i=1}^k d_{(i)}\) egyenlő szinten oszlik meg a még nyitott \(n-k\) elemre. 
-  A jelölt vízszint: \(\lambda_k = B_k/(n-k)\).
-  \item Ha \(\lambda_k \le d_{(k+1)}\), megtaláltuk a vízszintet: az összes hátralévő \(a_{(i)}=\lambda_k\) 
-  (és a korábbiak \(d_{(i)}\)).
-  \item Ha minden \(d_{(i)}\) teljesül és még marad keret, akkor nincs korlátozás: \(a_i=d_i\).
-\end{enumerate}
-A rendezés miatt az időbonyolultság \(O(n\log n)\). A megvalósított vezérlőben egy ekvivalens, 
-iteratív \emph{progresszív} algoritmus fut, amely kis elemszámon szintén gyors és stabil.
-
-\begin{figure}
-    \centering
-    \includegraphics[width=1\textwidth]{figures/Principle-of-Water-Filling-algorithm-76.png}
-    \caption{Water-filling elve telekomunikációban. \cite{Slacik2021Sensors}}
-    \label{fig:water-filling}
-\end{figure}
-
-\subsection{Tulajdonságok}
-\begin{itemize}
-  \item \textbf{Egyenlő szint elve:} a \(\lambda\) alatti igények teljes, a \(\lambda\) 
-  felettiek \(\lambda\)-ig kapnak. Így a kis igényűek sosem szenvednek hátrányt.
-  \item \textbf{Monotonitás:} ha a keret \(B\) nő, akkor \(\lambda\) nem csökken, és senki kiosztása nem csökken.
-  \item \textbf{Határhelyzetek:} ha \(\sum_i d_i \le B\) → nincs cap (végtelen korlát). Ha \(B=0\) → minden \(a_i=0\).
-\end{itemize}
-
-\section{A vezérlőben alkalmazott megvalósítás}
-
-\subsection{Kapcsolat a rendszer komponenseivel}
-A vezérlő igényekből (\texttt{raw\_current}) számolja a limiteket a fenti elv szerint 
-a \texttt{ALLOC\_MAX\_TOTAL} kereten. A \emph{megszakító} (breaker) logika ettől független, 
-a \emph{mért, tényleges} áramhoz viszonyít (\texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}) 
-biztonsági rétegként.
-
-\subsection{Példák}
-\paragraph{Klasszikus példa.}
-\(d=[10,10,100]\), \(B=90\) \(\Rightarrow\) \(a=[10,10,70]\) (a két kicsi teljesül, a maradék egy szinten oszlik meg).
-\paragraph{Vegyes igények.}
-\(d=[3,8,8,20]\), \(B=25\) \(\Rightarrow\) rendezve az első igény (3) teljesül, a maradék \(22\) 
-három felé oszlik: \(a=[3,\,7.33,\,7.33,\,7.33]\) A.
-
-\subsection{Implementációs részletek}
-A limitek csak \(\pm 10^{-3}\) A változás felett frissülnek a fogyasztók felé (zajcsillapítás), 
-a „nincs korlát” állapotot nagy \(\texttt{INF\_CAP}\) érték reprezentálja. Ha a nyers igény összeg a keret alá esik, 
-a limitek feloldódnak.
 
 % =====================================================================
 
