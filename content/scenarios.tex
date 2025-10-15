@@ -1,43 +1,78 @@
 \chapter{Rendszertesztek és bemutató szcenáriók}
 
 \section{Tesztek megvalósítása}
-A cél annak igazolása, hogy a rendszer komponensei megfelelően működnek. 
-A vizsgálat során \emph{idősoros} bemeneti (\texttt{esp\{x\}\_schedule.txt}) és kimeneti 
-fájlt (\texttt{thresholds.txt}) használunk. 
-Ebben az esetben a kontrollciklus periódusa \(T_c=3\,\mathrm{s}\).
+A cél itt annak igazolása volt, hogy a rendszer komponensei megfelelően működnek. 
+A vizsgálat során \emph{idősoros} bemeneti és kimeneti fájlt (\texttt{thresholds.txt}) használtam. 
+Ebben az esetben a kontrollciklus periódusa \(T_c=3\,\mathrm{s}\). \newline
 
-Mérőszámok és ellenőrzési pontok:
+\noindent \textbf{Mérőszámok és ellenőrzési pontok:}
 \begin{itemize}
-  \item \textbf{Összáram} (\texttt{sum\_current\_amps}) és \textbf{mérőnkénti tényleges áram} (\texttt{effective}) 
-  a vezérlő \texttt{/status} végpontján és az \texttt{output.txt}-ben.
-  \item \textbf{Korlátok (cap)}: az allokáció (max--min fair) eredményei.
-  \item \textbf{Küszöbök}: \texttt{ALLOC\_MAX\_TOTAL}, \texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}.
-  \item \textbf{Megszakító állapot}: \texttt{on/off} (hiszterézis).
+    \item \textbf{Mérőnkénti tényleges áram} (\texttt{effective}) ez nem az igényelt hanem a ténylegesen megkapott 
+    áramerősség, a vezérlő \texttt{/status} végpontján és az \texttt{output.txt}-ben.
+    \item \textbf{Összáram} A Mérőnkénti tényleges áramok összege (\texttt{sum\_current\_amps})
+    \item \textbf{Korlátok (cap)}: az allokált teljesítmény a végpontokon (max--min fair) eredményei.
+    \item \textbf{Küszöbök}:
+    \begin{itemize}
+        \item \texttt{ALLOC\_MAX\_TOTAL} - Ez a teljes teljesítmény keret, amit a vezérlő ki tud osztani,
+        a kiosztott áramok összege legfeljebb ennyi lehet.
+        \item \texttt{BREAKER\_MAX\_TOTAL} - A védelem kapcsolásának küszöbe, ha az összáram 
+        meghaladja ezt az értéket, a megszakítók lekapcsolnak (OFF).
+        \item \texttt{BREAKER\_MIN\_TOTAL} - A védelem automatikus visszakapcsolásának küszöbe,
+        csak akkor kapcsol vissza (ON) a megszakító, ha az összáram ez alá csökken.
+    \end{itemize}
+    \item \textbf{Megszakító állapot}: Itt csak \texttt{on/off} értéket figyelünk a védelmet ellátó megszakítókon.
 \end{itemize}
 
-Ezeket \texttt{output.txt} idősoros naplóban ellenőriztem, itt volt a legegyszerűbb, 
+\noindent Ezeket \texttt{output.txt} idősoros naplóban ellenőriztem, itt volt a legegyszerűbb, 
 mert itt egy sor egy ciklus.
 
 \section{Bemenetek és állapot}
 \begin{itemize}
-  \item \texttt{thresholds.txt}: \texttt{BREAKER\_MAX\_TOTAL}, 
-  \texttt{BREAKER\_MIN\_TOTAL}, \texttt{ALLOC\_MAX\_TOTAL}.
-  \item \texttt{esp1\_schedule.txt}, \texttt{esp2\_schedule.txt}, \
-  texttt{esp3\_schedule.txt}: \texttt{idő\ \ \ áramerősség} párok.
-  \item \texttt{sim\_control.txt}: \texttt{RUNNING}/\texttt{STOPPED}; alapértelmezés: \texttt{STOPPED}.
+    \item \texttt{thresholds.txt}:
+    \begin{itemize}
+        \item \texttt{BREAKER\_MAX\_TOTAL}
+        \item \texttt{BREAKER\_MIN\_TOTAL}
+        \item \texttt{ALLOC\_MAX\_TOTAL}
+    \end{itemize}
+    Ezek fentebb említett módon kerülnek használatra.
+    \item idő - áramerősség párokat tartalmazzó menetrendek minden végponthoz:
+    \begin{itemize}
+        \item \texttt{esp1\_schedule.txt}
+        \item \texttt{esp2\_schedule.txt}
+        \item \texttt{esp3\_schedule.txt}
+    \end{itemize}
+    \item \texttt{sim\_control.txt}:
+    \begin{itemize}
+        \item RUNNING a szimulációhoz használt merők belső órája megy
+        \item STOPPED a szimulációhoz használt mérők belső órája megáll
+    \end{itemize}
+    alapértelmezés: STOPPED.
 \end{itemize}
 
-\section{Várt viselkedés (rövid)}
+\section{Várt viselkedés}
 \begin{enumerate}
-  \item Ha \(\sum d_i \le \texttt{ALLOC\_MAX\_TOTAL}\)\,: \emph{nincs korlát} 
-  (cap \(\to\) nagy érték), \(\mathrm{effective}_i=d_i\).
-  \item Ha \(\sum d_i > \texttt{ALLOC\_MAX\_TOTAL}\)\,: \emph{max--min fair} 
-  (water-filling) elosztás: \(a_i=\min\{d_i,\lambda\}\), \(\sum_i a_i = \texttt{ALLOC\_MAX\_TOTAL}\).
-  \item Megszakító: ha \(\mathrm{sum} \ge \texttt{BREAKER\_MAX\_TOTAL}\)\,→ \texttt{off}, 
-  ha \(\mathrm{sum} \le \texttt{BREAKER\_MIN\_TOTAL}\)\,→ \texttt{on}.
-  \item \texttt{STOPPED} állapotban a  virtuális idő nem halad, 
-  a vezérlő nem küld új cap-et és nem kapcsolgat megszakítót.
+  \item Ha \(\sum_i d_i \le \texttt{ALLOC\_MAX\_TOTAL}\)\,: \emph{nincs korlát}, 
+  ezért \(\mathrm{effective}_i=d_i\) minden mérőre és az összáram egyszerűen \(\sum_i d_i\).
+  Ilyenkor a vezérlő nem „oszt újra”, a kiosztás megegyezik az igényekkel 
+  és a megszakító-logika csak akkor lép működésbe, ha az összáram véletlenül mégis átlépi a védelmi küszöböt.
+
+  \item Ha \(\sum_i d_i > \texttt{ALLOC\_MAX\_TOTAL}\)\,: \emph{max--min fair} elosztás lép életbe,
+  vagyis egy \(\lambda\) szintet keresünk úgy, hogy \(a_i=\min\{d_i,\lambda\}\) 
+  és \(\sum_i a_i=\texttt{ALLOC\_MAX\_TOTAL}\).
+  Azok a mérők, amelyek igénye \(d_i \le \lambda\), teljes igényüket megkapják, 
+  a nagyobb igényűek pedig \(\lambda\)-nál „levágódnak”, a vezérlő ezt 3 s-onként újraszámolja, így 
+  ha szabadul fel kapacitás ez automatikusan átcsoportosul.
+
+  \item Megszakító: ha az \emph{összáram} \(\mathrm{sum} \ge \texttt{BREAKER\_MAX\_TOTAL}\), 
+  a megszakító kikapcsol (védelmi leoldás)
+  és csak akkor kapcsol vissza, ha \(\mathrm{sum} \le \texttt{BREAKER\_MIN\_TOTAL}\).
+
+  \item \texttt{STOPPED} állapotban a virtuális idő nem halad, a vezérlő nem küld új korlátokat és 
+  nem ad megszakító-parancsokat, ilyenkor a bemeneti fájlok szabadon szerkeszthetők,
+  és a következő \texttt{RUNNING} ciklus kezdetekor az új konfiguráció lép életbe, ha ez be van kattintva 
+  időnullázással és naplóürítéssel.
 \end{enumerate}
+
 
 \section{Szcenáriók és elfogadási kritériumok}
 
