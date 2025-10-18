@@ -117,11 +117,12 @@ ezért nem várható korlátozás: \(\mathrm{effective}_i=d_i\). \newline
 \textbf{Hol ellenőrizhető?}
 \begin{itemize}
     \item \texttt{output.txt}: 3~s-onként új sor, pl.:
-    \begin{verbatim}
+    \begin{lstlisting}
     sim_state=RUNNING sum_current_amps=3.0
-    sims=esp1:raw=1.0,effective=1.0,cap=1e9|esp2:raw=1.5,effective=1.5,cap=1e9|esp3:raw=0.5,effective=0.5,cap=1e9
+    sims=esp1:raw=1.0,effective=1.0,cap=1e9|esp2:raw=1.5,
+    effective=1.5,cap=1e9|esp3:raw=0.5,effective=0.5,cap=1e9
     breakers=brk1:on,brk2:on
-\end{verbatim}
+    \end{lstlisting}
 \end{itemize}
 
 \textbf{Siker kritérium:} az élő grafikon ~3~A vízszintes görbét mutat az \texttt{output.txt} egyezően jelzi, 
@@ -174,11 +175,12 @@ hogy \(\mathrm{effective}_i=d_i\), korlátokk nincsenek érvényben, a megszakí
 \textbf{Hol ellenőrizhető?}
 \begin{itemize}
     \item \texttt{output.txt}: 3~s-onként új sor, pl.:
-\begin{verbatim}
+\begin{lstlisting}
 sim_state=RUNNING sum_current_amps=4.0
-sims=esp1:raw=2.0,effective=2.0,cap=1e9|esp2:raw=1.5,effective=1.5,cap=1e9|esp3:raw=0.5,effective=0.5,cap=1e9
+sims=esp1:raw=2.0,effective=2.0,cap=1e9|esp2:raw=1.5,
+effective=1.5,cap=1e9|esp3:raw=0.5,effective=0.5,cap=1e9
 breakers=brk1:on,brk2:on
-\end{verbatim}
+\end{lstlisting}
 \end{itemize}
 
 \textbf{Siker kritérium:} az élő grafikon ~4~A vízszintes görbét mutat, 
@@ -193,7 +195,7 @@ a megszakítók be vannak kapcsolva mindez 1--2 ciklus (3--6~s) után stabilan l
     \label{fig:undercap}
 \end{figure}
 
-\subsection{Túlterhelés, azonos igények: fair 3/3/3 (részletezve)}
+\subsection{Túlterhelés, azonos igények: fair 3/3/3 allokáció}
 \textbf{Bemenetek:}
 \begin{itemize}
     \item \texttt{ALLOC\_MAX\_TOTAL=9}
@@ -227,11 +229,12 @@ Azonos igények mellett \(\lambda=9/3=3\)~A, tehát minden mérő 3~A-t kap.
 \textbf{Hol ellenőrizhető?}
 \begin{itemize}
     \item \texttt{output.txt}: 3~s-onként új sor, pl.:
-\begin{verbatim}
+\begin{lstlisting}
 sim_state=RUNNING sum_current_amps=9.0
-sims=esp1:raw=50.0,effective=3.0,cap=3.0|esp2:raw=50.0,effective=3.0,cap=3.0|esp3:raw=50.0,effective=3.0,cap=3.0
+sims=esp1:raw=50.0,effective=3.0,cap=3.0|esp2:raw=50.0,
+effective=3.0,cap=3.0|esp3:raw=50.0,effective=3.0,cap=3.0
 breakers=brk1:on,brk2:on
-\end{verbatim}
+\end{lstlisting}
 \end{itemize}
 
 \textbf{Siker kritérium:} az élő grafikon három, közel azonos (3~A) szintet és 9~A összáramot mutat, 
@@ -246,7 +249,7 @@ a megszakítók bekapcsolva vannak mindez 2 ciklus (6~s) után stabil.
     \label{fig:Túlterhelt}
 \end{figure}
 
-\subsection{Dinamikus újraelosztás: a nagy felhasználó kap teret (részletezve)}
+\subsection{Dinamikus újraelosztás: a nagy felhasználó kap teret}
 \textbf{Bemenetek:}
 \begin{itemize}
     \item \texttt{ALLOC\_MAX\_TOTAL=90}
@@ -260,39 +263,53 @@ a megszakítók bekapcsolva vannak mindez 2 ciklus (6~s) után stabil.
     \end{itemize}
 \end{itemize}
 
-\textbf{Miért ez a beállítás?} Az első szakaszban az igények azonosak (\(50,50,50\)~A), ami túl nagy a 90~A kerethez képest, ezért \emph{fair} elosztás lép életbe: \([30,30,30]\)~A. A második szakaszban két mérő visszaesik 10~A-ra, a harmadik 100~A-t kér; a felszabaduló 80~A-ból a keret kitöltéséhez a harmadik kap 70~A-t, így \([10,10,70]\)~A lesz a kiosztás.
+\textbf{Miért ez a beállítás?} Az elején az igények azonosak 
+(\(50,50,50\)~A), ez túl nagy a 90~A kerethez képest, ezért \emph{fair} 
+elosztás lép életbe: \([30,30,30]\)~A. Egy idő után két mérő visszaesik 
+10~A-ra, a harmadik 100~A-t kér; a felszabaduló 80~A-ből a keret kitöltéséhez 
+a harmadik kap 70~A-t, így \([10,10,70]\)~A lesz a kiosztás. \newline
 
 \vspace{2pt}
 \noindent\textbf{Lépések és jelentésük:}
 \begin{enumerate}
-    \item \textbf{Reset \(t{=}0\)} — szinkron kezdet, a menetrendváltás \(t=60\)~s-nál pontosan értelmezhető.
-    \item \textbf{START} — a vezérlő 3~s-os ciklusokban számolja az allokációt; a \(t=60\)~s utáni váltás az azt követő első ciklusban jelenik meg.
-    \item \textbf{Megfigyelés \(0..80\)~s} — két jól elkülönülő állapotot várunk a grafikonon.
+    \item \textbf{Reset \(t{=}0\)} — szinkron kezdet mindenki biztosan 0-ról indul.
+    \item \textbf{START} — a vezérlő 3~s-os ciklusokban számolja újra az allokációt, 
+    a \(t=60\)~s utáni váltás az ezt követő ciklusban fog megjelenni.
+    \item \textbf{Megfigyelés \(0..80\)~s} — várjuk \(t=60\)~s-nél az újra osztást 
+    a grafikonon.
 \end{enumerate}
 
 \textbf{Várt rendszerállapot}
 \begin{itemize}
-    \item \emph{\(0..60\)~s}: cap-ek és tényleges értékek \([30,30,30]\)~A, összáram \(=90\)~A.
-    \item \emph{\(60+\)~s}: cap-ek és ténylegesek \([10,10,70]\)~A, összáram \(=90\)~A (a két kisebb igény teljesül, a maradék a nagy igényűhöz kerül).
-    \item \emph{Megszakító}: végig \texttt{on}, mert \(90<\texttt{BREAKER\_MAX}=120\) és \(90>\texttt{BREAKER\_MIN}=10\).
+    \item \emph{\(0..60\)~s}: tényleges értékek \([30,30,30]\)~A, összáram \(=90\)~A.
+    \item \emph{\(60+\)~s}: ténylegesek \([10,10,70]\)~A, összáram \(=90\)~A 
+    (a két kicsi igény teljesül, a maradék, pedig a nagyhoz kerül).
+    \item \emph{Megszakító}: végig be van kapcsolva, 
+    mert \(90<\texttt{BREAKER\_MAX}=120\) és \(90>\texttt{BREAKER\_MIN}=10\).
 \end{itemize}
 
 \textbf{Hol ellenőrizhető?}
 \begin{itemize}
     \item \texttt{output.txt}: 3~s-onként új sor; jellemző minták:
 \begin{lstlisting}
-t≈3s  (első szakasz)
+# t=3s  (elso szakasz)
 sim_state=RUNNING sum_current_amps=90.0
-sims=esp1:raw=50.0,effective=30.0,cap=30.0|esp2:raw=50.0,effective=30.0,cap=30.0|esp3:raw=50.0,effective=30.0,cap=30.0
+sims=esp1:raw=50.0,effective=30.0,cap=30.0|esp2:raw=50.0,
+effective=30.0,cap=30.0|esp3:raw=50.0,effective=30.0,cap=30.0
 breakers=brk1:on,brk2:on
 
-t≈63s (második szakasz, menetrendváltás után)
+# t=63s (masodik szakasz, igényváltozás utan)
 sim_state=RUNNING sum_current_amps=90.0
-sims=esp1:raw=10.0,effective=10.0,cap=10.0|esp2:raw=10.0,effective=10.0,cap=10.0|esp3:raw=100.0,effective=70.0,cap=70.0
+sims=esp1:raw=10.0,effective=10.0,cap=10.0|esp2:raw=10.0,
+effective=10.0,cap=10.0|esp3:raw=100.0,effective=70.0,cap=70.0
 breakers=brk1:on,brk2:on
 \end{lstlisting}
+\end{itemize}
 
-\textbf{Siker kritérium:} az élő grafikon két platót mutat: előbb \(30/30/30\)~A, majd a \(t=60\)~s utáni első ciklusban \(10/10/70\)~A; az \texttt{output.txt} ugyanígy jelzi a cap és \(\mathrm{effective}\) értékeket, az összáram végig \(90\)~A, a megszakítók \texttt{on}.
+\textbf{Siker kritérium:} a grafikon két állapotba áll be: 
+előbb \(30/30/30\)~A, majd a \(t=60\)~s után 
+\(10/10/70\)~A, az összáram végig \(90\)~A, 
+a megszakítók végig bekapcsolva maradnak.
 
 
 \begin{figure}[H]
@@ -310,16 +327,72 @@ breakers=brk1:on,brk2:on
 \end{figure}
 
 \subsection{Megszakító hiszterézis}
-\textbf{Bemenetek:}\\ \texttt{ALLOC\_MAX\_TOTAL=50}, \texttt{BREAKER\_MAX\_TOTAL=6}, 
-\texttt{BREAKER\_MIN\_TOTAL=3}. Menetrendek: \\
-ESP1: \(0\) s \(\to 2.0\) A, \(40\) s \(\to 0.5\) A; \;
-ESP2: \(0\) s \(\to 5.0\) A, \(40\) s \(\to 0.5\) A; \;
-ESP3: \(0\) s \(\to 0.0\) A.\\
-\textbf{Lépések:}\\ Reset \(t{=}0\), START, megfigyelés \(0..60\) s.\\
-\textbf{Várt eredmény:}\\ \(0..40\) s Sum \(=7\) A \(\Rightarrow\) \texttt{off}; \(40+\) 
-s Sum \(=1\) A \(\Rightarrow\) \texttt{on}.\\
-\textbf{Siker:}\\ \texttt{breakers= 0 s:off, 40 s:off} \(\to\) \texttt{on,\ on} váltás 
-az \texttt{output.txt}-ben és \texttt{/status}-ban.
+\textbf{Bemenetek:}
+\begin{itemize}
+    \item \texttt{ALLOC\_MAX\_TOTAL=50}
+    \item \texttt{BREAKER\_MAX\_TOTAL=6}
+    \item \texttt{BREAKER\_MIN\_TOTAL=3}
+    \item Menetrendek:
+    \begin{itemize}
+        \item ESP1: \(0\)~s \(\to 2{,}0\)~A,\; \(40\)~s \(\to 0{,}5\)~A
+        \item ESP2: \(0\)~s \(\to 5{,}0\)~A,\; \(40\)~s \(\to 0{,}5\)~A
+        \item ESP3: \(0\)~s \(\to 0{,}0\)~A
+    \end{itemize}
+\end{itemize}
+
+\textbf{Miért ez a beállítás?} Kezdetben az összáram 
+\(2{,}0+5{,}0+0{,}0=7{,}0\)~A, ami nagyobb, mint \(\texttt{BREAKER\_MAX\_TOTAL}=6\)~A, 
+ezért a megszakító \emph{leold}, \(40\)~s után a terhelések 
+\(0{,}5+0{,}5+0{,}0=1{,}0\)~A-ra esnek, ami kissebb, mint
+\(\texttt{BREAKER\_MIN\_TOTAL}=3\)~A, így a megszakító \emph{visszakapcsol}. 
+Az \texttt{ALLOC\_MAX\_TOTAL}=50~A bőven a terhelések fölött van, 
+ezért \emph{allokációs korlátozás nem várható}. \newline
+
+\vspace{2pt}
+\noindent\textbf{Lépések és jelentésük:}
+\begin{enumerate}
+    \item \textbf{Reset \(t{=}0\)} — szinkron indulás.
+    \item \textbf{START} — a vezérlő 3~s-os ciklusokban értékeli ki az adatokat. 
+    Az első ciklusban a \(\ge 6\)~A miatt ki van kapcsolva, a \(40\)~s utáni 
+    első ciklusban a \(\le 3\)~A miatt bekapcsol.
+    \item \textbf{Megfigyelés \(0..60\)~s} — a naplóban egy 
+    \texttt{off} \(\to\) \texttt{on} átmenet látszik \(40\)~s-nél.
+\end{enumerate}
+
+\textbf{Várt rendszerállapot}
+\begin{itemize}
+    \item \emph{\(0..40\)~s}: összáram \(\approx 7{,}0\)~A \(\Rightarrow\) 
+    megszakító kikapcsolva.
+    \item \emph{\(40+\)~s}: összáram \(\approx 1{,}0\)~A \(\Rightarrow\) 
+    megszakító bekapcsolva.
+    \item \emph{Allokáció}: nincs korlát (nagy szám), 
+    mert \(\sum d_i \ll \texttt{ALLOC\_MAX\_TOTAL}\).
+\end{itemize}
+
+\textbf{Hol ellenőrizhető?}
+\begin{itemize}
+    \item \texttt{output.txt}: 3~s-onként új sor; tipikus minták:
+\begin{lstlisting}
+# t=3s  (kezdeti szakasz)
+sim_state=RUNNING sum_current_amps=7.0
+sims=esp1:raw=2.0,effective=2.0,cap=1e9|esp2:raw=5.0,
+effective=5.0,cap=1e9|esp3:raw=0.0,effective=0.0,cap=1e9
+breakers=brk1:off,brk2:off
+
+# t=42s (menetrendváltás utáni első ciklus)
+sim_state=RUNNING sum_current_amps=1.0
+sims=esp1:raw=0.5,effective=0.5,cap=1e9|esp2:raw=0.5,
+effective=0.5,cap=1e9|esp3:raw=0.0,effective=0.0,cap=1e9
+breakers=brk1:on,brk2:on
+\end{lstlisting}
+\end{itemize}
+
+\textbf{Siker kritérium:} az élő grafikonon \(0..40\)~s között 
+\(\sim 7\)~A körüli összáram mellett kikapcsolt állapot látszik, 
+\(40\)~s után \(\sim 1\)~A mellett bekapcsolt, az \texttt{output.txt} 
+ezt a \texttt{off} \(\to\) \texttt{on} váltást 2-3 
+cikluson belül egyértelműen tükrözi.
+
 
 \begin{figure}[H]
     \centering
@@ -335,13 +408,67 @@ az \texttt{output.txt}-ben és \texttt{/status}-ban.
     \label{fig:megszakító_2}
 \end{figure}
 
-\subsection{STOPPED invariánsok}
-\textbf{Bemenetek:}\\ induljunk a 3.\ szcenárió állapotából (3/3/3 cap).\\
-\textbf{Lépések:}\\ \texttt{STOPPED} módba váltás; módosítsuk \texttt{ALLOC\_MAX\_TOTAL=6}-ra, 
-ESP1 menetrendjét \(1\) A-ra; várjunk \(\sim\) 2 ciklust.\\
-\textbf{Várt eredmény:}\\ a cap-ek és a megszakítóállapot \textbf{nem} változik (\texttt{STOPPED} 
-alatt nem történik beavatkozás).\\
-\textbf{Siker:}\\ \texttt{/status.sim\_state=STOPPED}; a \texttt{cap} és a \texttt{breakers} mezők változatlanok.
+\subsection{Leállított mód (STOPPED): invariánsok}
+\textbf{Bemenetek:}
+\begin{itemize}
+    \item Kiindulás: a 3.\ szcenárió stabil állapota 
+    \begin{itemize}
+        \item \(\texttt{ALLOC\_MAX\_TOTAL}=9\)
+        \item \(\texttt{BREAKER\_MAX\_TOTAL}=12\)
+        \item \(\texttt{BREAKER\_MIN\_TOTAL}=2\)
+        \item \(\mathrm{effective}=[3,3,3]\)~A
+        \item \(\texttt{sum}=9\)~A, megszakítók \texttt{on}
+    \end{itemize}
+    \item Módosítások STOPPED állapot alatt \emph{csak fájlba írva}:
+    \begin{itemize}
+        \item \(\texttt{ALLOC\_MAX\_TOTAL}=6\)
+        \item ESP1 menetrend \(1{,}0\)~A
+    \end{itemize}
+\end{itemize}
+
+\textbf{Miért ez a beállítás?} A cél annak igazolása, 
+hogy \texttt{STOPPED} módban a vezérlő \emph{nem avatkozik be}: 
+nem számol ad új korlátokat, nem kapcsol megszakítót, a virtuális idő nem halad 
+és a napló is megáll.
+
+\vspace{2pt}
+\noindent\textbf{Lépések és jelentésük:}
+\begin{enumerate}
+    \item \textbf{STOPPED} — a \texttt{sim\_control.txt} \texttt{STOPPED}-re áll, 
+    a vezérlési ciklus megáll, nincs új allokáció vagy megszakítóparancs.
+    \item \textbf{Konfiguráció módosítása} — \(\texttt{ALLOC\_MAX\_TOTAL}=6\) 
+    és ESP1 \(1{,}0\)~A változtatások \emph{mentése} (de ez még nem lép életbe).
+    \item \textbf{Várakozás \(\sim\) 2 ciklusnyi időtartam} — mivel a rendszer áll, 
+    nem várható új státusz- vagy naplósor.
+\end{enumerate}
+
+\textbf{Várt rendszerállapot}
+\begin{itemize}
+    \item \emph{Korlátok és effektív értékek}: változatlanul 
+    \([3,3,3]\)~A (a leállítás \emph{előtti} állapot szerint).
+    \item \emph{Megszakító}: változatlanul bekapcsolt állapotban van 
+    (nem történik átkapcsolás).
+    \item \emph{Idő és napló}: a virtuális idő nem halad, 
+    az \texttt{output.txt} \emph{nem} bővül.
+\end{itemize}
+
+\textbf{Hol ellenőrizhető?}
+\begin{itemize}
+    \item \texttt{output.txt}: az utolsó \texttt{RUNNING} sor után nem jelennek meg új bejegyzések \texttt{STOPPED} alatt, pl.:
+\begin{lstlisting}
+# utolsó sor STOPPED előtt
+sim_state=RUNNING sum_current_amps=9.0
+sims=esp1:raw=50.0,effective=3.0,cap=3.0|esp2:raw=50.0,effective=3.0,cap=3.0|esp3:raw=50.0,effective=3.0,cap=3.0
+breakers=brk1:on,brk2:on
+
+# STOPPED alatt nincs új sor
+\end{lstlisting}
+\end{itemize}
+
+\textbf{Siker kritérium:} \(\texttt{/status.sim\_state=STOPPED}\), a korlátok 
+és megszakító értékek megegyeznek a leállítás \emph{előtti} állapottal 
+és az \texttt{output.txt} nem bővül a várakozás ideje alatt.
+
 
 \begin{figure}[H]
     \centering
