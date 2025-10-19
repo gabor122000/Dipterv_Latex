@@ -1,39 +1,50 @@
-%----------------------------------------------------------------------------
-\chapter{\bevezetes}
-%----------------------------------------------------------------------------
+\chapter{Bevezetés}
 
-A diplomatervem célja egy olyan keretrendszer megvalósítása, 
-amely lehetővé teszi a távoli felügyeletet és vezérlést. 
-A rendszer egyszerű felépítésű végponti elemeket 
-(például ESP8266 alapú érzékelő- és vezérlőmodulokat) köt össze 
-konténerizált vezérlőkomponenssel. 
-A célja az adatok gyűjtése, tárolása és automatizált feldolgozása, 
-valamint a végpontok megbízható kezelésének és redundanciájának 
-biztosítása Kubernetes környezetben.
-\paragraph{}
-A villamosenergetikában az elmúlt években nagy igény jelentkezett 
-a hálózati elemek, például autótöltők vagy megszakítók valós 
-idejű felügyeletére és távoli vezérlésére. Ez fontos energiahatékonyság,
-hálózati biztonság és a zavartűrés szempontjából is. 
-A modern ipari rendszerekben alkalmazott szoftverek, 
-mint a Schneider EcoStruxure Power Monitoring Expert vagy a Siemens SIMATIC 
-Energy Suite széleskörű funkcionalitást biztosítanak, szabványoknak megfelelőséget 
-és 24/7 gyártói támogatást kínálnak, 
-de jelentősen drágábbak.
-\paragraph{}
-A munkámban bemutatni kívánt saját megoldás ezzel szemben nyílt 
-forráskódú komponensekre épít (ESP8266 mikrokontrollerek, Prometheus 
-idősoros adatbázis, Grafana vizualizáció és Python Flask vezérlőszerver), 
-ez költséghatékony és jól testre szabható az előzőkkel szemben. 
-A rendszerem moduláris felépítése miatt az érzékelők plug-and-play módon
-csatlakoztathatóak és Kubernetes 
-segíti a skálázhatóság, a redundancia és a magas rendelkezésre állást.
+A növekvő igények az elektromos energiafelhasználás hatékonyságára, 
+a hálózatüzemeltetés biztonságára és az üzemeltetési költségek csökkentésére egyre 
+inkább megkövetelik a fogyasztóhoz közeli hálózatrészek (megszakítók, 
+autótöltők, alrendszerek) folyamatos megfigyelését és szükség 
+esetén távoli irányítását. A korszerű épületüzemeltetésben 
+ezért olyan megoldásokra van szükség, amelyek lehetővé teszik a \emph{mérést}, 
+\emph{adataggregációt} és \emph{vezérlést}, továbbá az általam tervezett 
+megoldás nyílt szabványokra és könnyen 
+skálázható szoftveres komponensekre épül így csökkentve a költségeket. 
+Dolgozatom célja egy ilyen, 
+moduláris és konténerizált \textbf{keretrendszer} elkészítése energetikai 
+felügyelethez, amely alacsony költségű végponti 
+eszközöket (ESP8266 alapú mérő/vezérlő végpontokat), egy Python-alapú 
+vezérlőrendszert, idősoros adatbázist (Prometheus) és vizualizációs 
+felületet (Grafana) kapcsol össze.
 
-A dolgozat a következő részekből áll:
+A rendszer lényegi eleme egy \emph{water-filling}
+allokációs elv alkalmazása az erőforrások igazságos szétosztására, amikor 
+egy globális áramkeretet kell betartani. Ez a szabályozó 
+előnyben részesíti a kis igényeket és a fennmaradó kapacitást egyenlően 
+osztja el a nagy fogyasztók között. A megközelítés egyszerű, 
+determinisztikus és robusztus, ezért választottam valós idejű erőforrás elosztásra.
 
+A dolgozatban ismertetett megoldás \emph{nyílt forrású} és 
+\emph{költséghatékony} alternatívát nyújt az ipari ökoszisztémákhoz 
+képest. 
+Bár ezek a gyártói rendszerek széles körű megfelelőséget és 24/7 támogatást kínálnak, 
+a jelen keretrendszer előnye az \emph{átláthatóság}, a 
+\emph{rugalmas bővíthetőség} és a \emph{gyors testreszabhatóság}, 
+ami különösen kutatás-fejlesztési, oktatási és \emph{fejlesztési} 
+célokra értékes.
+
+\paragraph{Célkitűzések.} A dolgozat konkrét céljai:
 \begin{itemize}
-    \item \textbf{Első fejezet:} A meglévő ipari megoldások ismertetése és összehasonlítása a saját fejlesztéssel.
-    \item \textbf{Második fejezet:} A keretrendszer tervezésének bemutatása.
-    \item \textbf{harmadik fejezet:} A rendszer egyes komponenseinek részletes megvalósítása.
-    \item \textbf{Negyedik fejezet:} Nagy rendelkezésre állás megvalósítása hibrid klaszter topológiával.
+  \item Egy egységesített, konténerizált keretrendszer tervezése és implementálása 
+  energetikai felügyelethez.
+  \item Végponti eszközök (ESP8266) 
+  hatékony adatgyüjtése.
+  \item Központi vezérlő megvalósítása Python/Flask alapokon, 
+  REST API-val és Modbus/TCP beavatkozással.
+  \item Igazságos terheléselosztás (water-filling) beépítése.
+  \item A rendszer vizualizációja Grafanával.
 \end{itemize}
+
+Röviden a rendszer célja, 
+hogy \emph{gyakorlatias, bővíthető és reprodukálható} mintát adjon energetikai 
+felügyeleti rendszerekhez, megkönnyítse a mérés-döntés-beavatkozás 
+zárt rendszerű megvalósítását nyílt szabványok és elterjedt eszközökkel.

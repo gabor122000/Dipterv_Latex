@@ -31,12 +31,12 @@ egyszerű szövegfájlokkal legyen vezérelhető és kiértékelhető.
 
 \subsection{\texttt{thresholds.txt} -- küszöbök és maximum megengedhető áram}
 A vezérlő szerver minden ciklusban beolvassa. Kulcs--érték párok, tizedes ponttal:
-\begin{verbatim}
+\begin{lstlisting}
 # Küszöbértékek a vezérlő szerverhez
 BREAKER_MAX_TOTAL=65.0    # [A] - Megszakító lekapcsolási áram
 BREAKER_MIN_TOTAL=35.0    # [A] - Megszakító bekapcsolási áram
 ALLOC_MAX_TOTAL=95.0      # [A] - Max áram érték
-\end{verbatim}
+\end{lstlisting}
 
 \noindent Megjegyzések:
 \begin{itemize}
@@ -49,12 +49,12 @@ ALLOC_MAX_TOTAL=95.0      # [A] - Max áram érték
 \subsection{\texttt{esp\{x\}\_schedule.txt} -- idősoros bemenet}
 Formátum: időpillanat másodpercben + kívánt áram (A). A menetrend \emph{lépcsős}: a legutóbbi időponthoz 
 tartozó érték érvényes a következő megadásig.
-\begin{verbatim}
+\begin{lstlisting}
 # seconds  amps
 0         1.0
 30        2.5
 120       0.8
-\end{verbatim}
+\end{lstlisting}
 \noindent Irányelvek: tizedes elválasztó pont; tetszőleges szóköz; a sorok idő 
 szerint rendezve mint minden szöveges ki- és bemeneti file-ban.
 
@@ -70,14 +70,14 @@ a véletlen szerkesztést elkerülendő; a Dev Panel ``Clear output.txt'' művel
 és a vezérlő legközelebb automatikusan újra létrehozza a fejlécet.
 
 \noindent Formátum: \texttt{kulcs=érték} párok szóközzel elválasztva.
-\begin{verbatim}
+\begin{lstlisting}
 # One record per line; fields are key=value separated by spaces
 timestamp=1758199200 sim_state=RUNNING sum_current_amps=5.7 \
 alloc_max_total_amps=6.0 max_total_amps=6.0 min_total_amps=1.0 \
 sims=esp1:raw=2.0,effective=2.0,cap=2.0|esp2:raw=1.7,effective=1.7,
 cap=2.0|esp3:raw=2.5,effective=2.0,cap=2.0 \
 breakers=brk1:on,brk2:on
-\end{verbatim}
+\end{lstlisting}
 
 \noindent Kulcsok a kimeneti file-ban:
 \begin{itemize}
@@ -107,33 +107,33 @@ A kimeneti \texttt{output.txt} önleíró; minden rekord tartalmazza az adott ci
 A formátum egyszerűen feldolgozható bármely nyelven (kulcs=érték párok; \texttt{sims} és \texttt{breakers} 
 mezők jól definiált szeparátorokkal).
 
-\section{Rövid példa -- beállítás $\rightarrow$ kimenet (részlet)}
+\section{Rövid példa -- beállítás $\rightarrow$ kimenet}
 
-\paragraph{thresholds.txt}
-\begin{verbatim}
+\noindent\textbf{thresholds.txt}
+\begin{lstlisting}
 BREAKER_MAX_TOTAL=9.0
 BREAKER_MIN_TOTAL=2.0
 ALLOC_MAX_TOTAL=9.0
-\end{verbatim}
+\end{lstlisting}
 
-\paragraph{esp1\_schedule.txt}
-\begin{verbatim}
+\noindent\textbf{esp1\_schedule.txt}
+\begin{lstlisting}
 # seconds  amps
 0  50
 60 10
-\end{verbatim}
+\end{lstlisting}
 
-\paragraph{esp2\_schedule.txt}
-\begin{verbatim}
+\noindent\textbf{esp2\_schedule.txt}
+\begin{lstlisting}
 0  50
 60 10
-\end{verbatim}
+\end{lstlisting}
 
-\paragraph{esp3\_schedule.txt}
-\begin{verbatim}
+\noindent\textbf{esp3\_schedule.txt}
+\begin{lstlisting}
 0  50
 60 100
-\end{verbatim}
+\end{lstlisting}
 
 \noindent Várható kiosztás a 0--60 s szakaszban: mindhárom SIM korlátozott, 
 mivel az igény 150 A $>$ 9 A. 60 s után az 
@@ -258,7 +258,7 @@ A Dev Panel backend része új végpontokkal bővült, ezek:
 \end{itemize}
 
 \noindent Az általam használt JSON séma a tesztek definiálására:
-\begin{verbatim}
+\begin{lstlisting}
 {
   "name": "Demo",
   "thresholds": {
@@ -277,7 +277,7 @@ A Dev Panel backend része új végpontokkal bővült, ezek:
     "start_after_load": true
   }
 }
-\end{verbatim}
+\end{lstlisting}
 
 A \verb|/api/run_scenario| hívás menete:
 \begin{enumerate}

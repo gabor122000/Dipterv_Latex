@@ -1,0 +1,41 @@
+\chapter{Összefoglalás és kitekintés}
+
+A dolgozat célja egy nyílt forrású, konténerizált energetikai felügyeleti és beavatkozási keretrendszer tervezése és megvalósítása volt, amely alacsony költségű végponti eszközöket (ESP8266-alapú mérő/vezérlő csomópontok), Python-alapú kontrollkomponenst, idősoros adatkezelést (Prometheus) és vizualizációt (Grafana) integrál. A rendszer tiszta interfészeken választja szét a mérést és a döntéshozatalt, a beavatkozást pedig ipari protokollon (Modbus/TCP) keresztül valósítja meg. Az üzemeltetési környezet fejlesztői/laborban Docker Compose, nagyobb rendelkezésre állási és skálázási igény esetén Kubernetes.
+
+\paragraph{Eredmények és tanulságok.}
+A laboratóriumi és szimulációs vizsgálatok azt mutatták, hogy a keretrendszer képes:
+\begin{itemize}
+  \item a mért villamos mennyiségek folyamatos, Prometheus-kompatibilis exportjára és azok valós idejű megjelenítésére;
+  \item a beavatkozások determinisztikus, átlátható végrehajtására Modbus/TCP-n,
+        amely gyors reagálást és reprodukálható viselkedést biztosít;
+  \item egy globális áramkeret pontos követésére, a túllépések gyors csillapítására és az erőforrások igazságos elosztására a max–min fair (``water-filling'') szabályozóval;
+  \item skálázható, konténer-alapú üzemeltetésre, amely egyszerűsíti a bevezetést, a frissítést és a diagnosztikát.
+\end{itemize}
+Gyakorlati tapasztalat, hogy a \emph{szabályozás egyszerűsége} (histerézis, időzítés) fontosabb a túlzott modellbonyolításnál: a mérési zaj, hálózati késleltetés és végponti nemlinearitások mellett a robusztus, determinisztikus vezérlő stabilabban teljesít. A komponensek lazán csatolt felépítése és a metrika-alapú megfigyelhetőség (\emph{observability}) érdemben csökkenti a hibaelhárítás idejét.
+
+\paragraph{Hozzájárulások.}
+A munka fő műszaki hozzájárulásai:
+\begin{enumerate}
+  \item Egységesített mérési/vezérlési interfész energetikai végpontokhoz Prometheus-formátumú metrikákkal és REST/Modbus híd-komponenssel.
+  \item Max–min fair elosztású beavatkozási szabályozó integrációja ipari protokollokkal, hiszterézissel és időzítéssel stabilizálva.
+  \item Konténer-alapú referenciaimplementáció (Compose $\rightarrow$ Kubernetes migrációs minta) üzemeltetési útmutatóval.
+  \item Grafana-alapú üzemviteli és diagnosztikai irányítópultok, riasztási feltételek és alap-telemetria.
+  \item Reprodukálható szimulációs csővezeték, amely determinisztikus bemenetekkel teszteli a szabályozó stabilitását és reagálóképességét.
+\end{enumerate}
+
+\paragraph{Korlátok és érvényességi fenyegetések.}
+A vizsgálatok kontrollált környezetben zajlottak; a terepi viszonyok (hálózati zavarok, különböző végponti firmware-ek, szélsőséges terhelési profilok) további kihívásokat jelenthetnek. A biztonsági réteg alapértelmezetten a helyi hálózatra és egyszerű hitelesítésre támaszkodik; nagyvállalati környezetben szükséges a végpont- és szolgáltatásoldali tanúsítványkezelés és kulcsforgatás beépítése. A Modbus/TCP protokoll korlátai (nincs beépített titkosítás, korlátozott hibakezelés) szintén megfontolandók.
+
+\paragraph{Jövőbeli munka.}
+A rendszer fejlesztésének természetes irányai:
+\begin{itemize}
+  \item \textbf{Biztonság és megbízhatóság:} mTLS alapú végpont-hitelesítés, kulcsforgatás, jogosultságkezelés; többpéldányos kontrollszolgáltatás és állapot-replikáció a magas rendelkezésre álláshoz.
+  \item \textbf{Protokoll-tágítás:} IEC~60870-5-104 / IEC~61850 gateway, illetve modern ipari mezőbuszok támogatása a heterogén eszközparkhoz.
+  \item \textbf{Fejlettebb szabályozás:} modellprediktív vagy hibrid (MPC + max–min) vezérlő vizsgálata időkorlátos optimalizálásra, költség- és hálózati korlátok együttes kezelésére.
+  \item \textbf{Edge-képességek:} lokális döntésképesség és \emph{graceful degradation} hálózati szakadások esetén; OTA frissítési csatorna az ESP eszközökre.
+  \item \textbf{Megfigyelhetőség és üzemeltetés:} trace-alapú hibakeresés (OpenTelemetry), automatikus eszköz-felfedezés, konfiguráció- és verziókezelés (\emph{GitOps}, Helm chartok).
+  \item \textbf{Valós terepi pilot:} több, egymást zavaró terhelés és megosztott hálózati infrastruktúra mellett végzett hosszú távú mérések, SLA-k és üzemeltetési költségek becslésével.
+\end{itemize}
+
+\paragraph{Zárógondolat.}
+A bemutatott keretrendszer átlátható, bővíthető és költséghatékony alapot ad az energetikai felügyelet és beavatkozás megvalósításához. Az egyszerű, robusztus szabályozási elvek, a metrika-központú megfigyelhetőség és a konténeres üzemeltetés együtt olyan \emph{gyakorlatias} eszköztárat alkotnak, amely kutatási, oktatási és ipari \emph{proof-of-concept} környezetekben egyaránt gyors bevezetést és megbízható működést tesz lehetővé.
