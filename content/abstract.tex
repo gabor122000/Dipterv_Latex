@@ -8,18 +8,41 @@
 %----------------------------------------------------------------------------
 \chapter*{Kivonat}\addcontentsline{toc}{chapter}{Kivonat}
 
-Az elosztott villamosenergia-felhasználás (elektromos járműtöltők, lokális termelők, intelligens fogyasztók) gyors terjedése új követelményeket támaszt a mérés–döntés–beavatkozás ciklus automatizálásával szemben. A dolgozat egy olyan, nyílt forrású és konténerizált keretrendszert mutat be, amely alacsony költségű végponti eszközöket (ESP8266 alapú mérő/vezérlő csomópontokat), egy Python-alapú kontrollszolgáltatást, idősoros adatkezelést (Prometheus) és vizualizációt (Grafana) integrál egy egységes, skálázható megoldásba. A cél egy könnyen reprodukálható és testreszabható rendszer megtervezése és megvalósítása, amely képes valós idejű felügyeletre, riasztásra és igazságos beavatkozásra korlátos erőforrások mellett.
+Az elosztott villamosenergia-felhasználás (elektromos járműtöltők, lokális termelők, intelligens fogyasztók) gyors terjedése 
+új követelményeket támaszt a villamos energia elosztó hálózattal szemben. A dolgozat egy olyan, nyílt forrású 
+és konténerizált keretrendszert mutat be, ami kis költségű eszközöket (ESP8266 alapú mérő), egy Python-alapú vezérlőt, 
+idősoros adatkezelést (Prometheus) és vizualizációt (Grafana) 
+integrál egy egységesmegoldásba. A cél egy könnyen reprodukálható és testreszabható rendszer megvalósítása, ami képes valós 
+idejű felügyeletre és korlátos erőforrások kezelésére.
 
-A javasolt architektúra a mérést és a vezérlést tiszta interfészekkel választja szét. A végpontok nem invazív szenzorokkal gyűjtött villamos mennyiségeket exportálnak Prometheus-kompatibilis metrikákként. A központi kontrollkomponens (Python/Flask) REST API-n keresztül fogadja és feldolgozza a méréseket, majd ipari környezetben elterjedt protokollon, Modbus/TCP-n keresztül hajt végre beavatkozásokat (például áramkorlát beállítása EV-töltőkön). A komponensek konténerekben futnak, fejlesztői és labor környezetben Docker Compose biztosítja az orkesztrációt, míg nagyobb rendelkezésre állás és terhelés esetén Kubernetes-alapú üzemeltetési minta alkalmazható. A felügyeletet és az elemzést grafikus irányítópultok támogatják, riasztási feltételek és diagnosztikai nézetek mellett.
+A javasolt architektúra a mérést és a vezérlést átlátható interfészeken mutatja. 
+A végpontok áramértékeket exportálnak Prometheus-kompatibilis metrikákként. 
+A kontrollszerver (Python/Flask) REST API-n keresztül fogadja a méréseket, majd ipari környezetben elterjedt protokollon, 
+Modbus/TCP-n keresztül hajt végre beavatkozásokat az energetikai eszközökön. 
+A rendszer komponensei konténerekben futnak, fejlesztői környezetben Docker Compose biztosítja az orkesztrációt, 
+míg nagyobb rendelkezésre állási igény esetén Kubernetes alkalmazható. 
 
-A rendszer kulcseleme egy max–min fair (``water-filling'') allokációs elvű szabályozó, amely egy előre rögzített globális áramkeretet tartat be több versengő fogyasztó között. Az algoritmus a kisebb igényeket preferálja, majd a fennmaradó kapacitást olyan módon osztja szét, hogy a fogyasztók ``vízszintje'' kiegyenlítődjön, minimalizálva az igazságtalanságot. A megközelítés determinisztikus, egyszerűen paraméterezhető, és jól illeszthető valós idejű döntésekhez, hiszterézissel és időzítéssel kiegészítve a lengések elkerülésére. A szabályozó a mérésekből származó idősoros adatokon dolgozik, és szcenárió-alapú szabályok mentén (időablakok, prioritások, határértékek) állítja elő a beavatkozási parancsokat.
+A rendszer kulcseleme egy max-min fair allokációs elv, ami 
+egy előre rögzített globális áramkeretet tartat be több fogyasztó között. 
+Ez a kisebb igényeket preferálja, majd a fennmaradó kapacitást olyan módon osztja szét, hogy a fogyasztás összege  kiegyenlítődjön. 
+Ez a megközelítés determinisztikus, egyszerűen paraméterezhető, és jól illeszthető valós idejű döntésekhez. 
+A szabályozó a mérésekből származó idősoros adatokon dolgozik, és szabályok mentén 
+(időablakok, prioritások, határértékek) állítja elő a beavatkozási parancsokat.
 
-A megvalósítást laboratóriumi és szimulációs környezetben értékeltük. A laborban több, ESP8266-alapú csomópont gyűjtött terhelési adatokat valós idejű vizualizációval, miközben a kontrollkomponens dinamikusan korlátozta a fogyasztókat a megadott áramkereten belül. A szimulációs csővezeték determinisztikus bemenetekkel (küszöbök, ütemezések, vezérlési szkriptek) tette lehetővé különböző terhelési profilok és hibaesemények reprodukálását, az algoritmus stabilitásának és reagálóképességének vizsgálatára. A tapasztalatok szerint a rendszer képes a keretek pontos követésére, a túllépések gyors csillapítására és az erőforrások igazságos elosztására, miközben az üzemeltetési komplexitás a konténerizáció miatt kezelhető marad.
+A megvalósítást szimulációs környezetben próbáltam. Itt ESP8266-alapú végpont gyűjtött terhelési adatokat valós idejű vizualizációval, 
+miközben a kontrollkomponens dinamikusan korlátozta a fogyasztókat a megadott áramkeretre. A szimuláció determinisztikus bemenetekkel 
+(küszöbök, ütemezések, vezérlési szkriptek) engedte meg különböző terhelési profilok és hibaesemények létrehzozását, 
+az algoritmus stabilitásának és működésének vizsgálatára. 
+A tapasztalatok szerint a rendszer képes a keretek pontos követésére, 
+a túllépések gyors csillapítására és az erőforrások igazságos elosztására.
 
-A dolgozat fő hozzájárulásai a következők: (i) egységesített, Prometheus-kompatibilis mérési/vezérlési interfész energetikai végpontokhoz; (ii) max–min fair elosztást megvalósító beavatkozási szabályozó integrációja ipari protokollokkal; (iii) konténer-alapú referenciaimplementáció Docker Compose és Kubernetes mintákkal; (iv) Grafana alapú üzemviteli és diagnosztikai irányítópultok; (v) reprodukálható szimulációs és tesztkörnyezet. A keretrendszer kutatás-fejlesztési, oktatási és \emph{proof-of-concept} célokra egyaránt alkalmas, és transzparens, költséghatékony alternatívát kínál a zárt, gyártóspecifikus megoldásokkal szemben.
-
-\textbf{Kulcsszavak:} energetikai felügyelet; ESP8266; Prometheus; Grafana; Docker; Kubernetes; Modbus/TCP; max–min fair; water-filling; idősoros adatbázis; terheléselosztás.
-
+A dolgozat hozzájárulásai a következők: 
+(i) egységesített, Prometheus kompatibilis mérési interfész energetikai rendszerekhez 
+(ii) max-min fair elosztást megvalósító vezérlő 
+(iii) konténer-alapú referenciaimplementáció Docker Compose és Kubernetesben 
+(iv) Grafana alapú üzemviteli és diagnosztikai irányítópultok
+(v) reprodukálható tesztkörnyezet. 
+A keretrendszer akár ipari célokra is alkalmas, költséghatékony alternatívát kínál a zárt, gyártóspecifikus megoldásokkal szemben.
 
 \vfill
 \selectenglish
@@ -30,18 +53,39 @@ A dolgozat fő hozzájárulásai a következők: (i) egységesített, Prometheus
 %----------------------------------------------------------------------------
 \chapter*{Abstract}\addcontentsline{toc}{chapter}{Abstract}
 
-The rapid proliferation of distributed electricity use (electric vehicle charging, local generation, intelligent loads) imposes new requirements on automating the measure–decide–act loop. This thesis presents an open-source, containerized framework that integrates low-cost edge devices (ESP8266-based sensing/actuation nodes), a Python control service, time-series data handling (Prometheus), and visualization (Grafana) into a unified, scalable solution. The goal is to design and implement a reproducible and customizable system capable of real-time monitoring, alerting, and fair actuation under constrained resources.
+The rapid spread of distributed electricity use (electric vehicle chargers, local producers, smart consumers)
+places new demands on the electricity distribution network. The thesis presents an open source
+and containerized framework that integrates low-cost devices (ESP8266-based meter), a Python-based controller,
+time series data management (Prometheus) and visualization (Grafana)
+into a single solution. The goal is to implement an easily reproducible and customizable system that is capable of real-time monitoring and managing limited resources.
 
-The proposed architecture separates measurement from control through clean interfaces. Edge nodes collect electrical quantities using non-invasive sensors and export them as Prometheus-compatible metrics. The central control component (Python/Flask) ingests and processes these measurements via a REST API, and executes interventions over an industry-standard protocol (Modbus/TCP), for example setting current limits on EV chargers. All components run in containers: in development and lab environments orchestration is handled by Docker Compose, while for higher availability and load a Kubernetes-based deployment pattern is applied. Operations and analysis are supported by graphical dashboards with alert conditions and diagnostic views.
+The proposed architecture exposes measurement and control through transparent interfaces.
+The endpoints export current values as Prometheus-compatible metrics.
+The control server (Python/Flask) receives measurements via REST API, then performs commands on energy devices via Modbus/TCP, a protocol common in industrial environments.
+The system components run in containers, Docker Compose provides orchestration in the development environment,
+while Kubernetes can be used in cases of higher availability requirements.
 
-A key element of the system is a max–min fair (``water-filling'') allocation controller that enforces a pre-set global current budget across multiple competing consumers. The algorithm prioritizes smaller demands, and distributes remaining capacity so that consumers' ``fill levels'' equalize, thereby minimizing unfairness. The approach is deterministic, easy to parameterize, and well-suited to real-time decisions, complemented by hysteresis and timing to avoid oscillations. The controller operates on time-series measurements and generates actuation commands according to scenario-based rules (time windows, priorities, thresholds).
+The key element of the system is a max-min fair allocation principle, which
+maintains a pre-set global power limit among multiple consumers.
+This prefers smaller demands, then distributes the remaining capacity in such a way that the amount of consumption is balanced.
+This approach is deterministic, easily parameterizable, and well suited to real-time decisions.
+The controller works on time-series data from measurements and generates intervention commands based on rules
+(time windows, priorities, limit values).
+I tried the implementation in a simulation environment. Here, an ESP8266-based endpoint collected load data with real-time visualization,
+while the control component dynamically limited the consumers to the specified power frame. The simulation allowed the creation of different load profiles 
+and fault events with deterministic inputs
+(thresholds, schedules, control scripts),
+to test the stability and operation of the algorithm.
+According to the experience, the system is able to accurately track the frames,
+quickly mitigate overshoots, and fairly allocate resources.
 
-The implementation was evaluated in both laboratory and simulation environments. In the lab, multiple ESP8266-based nodes acquired load measurements with real-time visualization, while the control component dynamically curtailed consumers within the specified current budget. The simulation pipeline, with deterministic inputs (thresholds, schedules, control scripts), enabled reproduction of diverse load profiles and fault events to study the algorithm’s stability and responsiveness. Results indicate accurate budget tracking, rapid damping of overshoots, and fair resource allocation, while operational complexity remains manageable thanks to containerization.
-
-The primary contributions are: (i) a unified, Prometheus-compatible measurement/control interface for energy endpoints; (ii) integration of a max–min fair allocation controller with industrial protocols; (iii) a container-based reference implementation with Docker Compose and Kubernetes patterns; (iv) Grafana-based operational and diagnostic dashboards; and (v) a reproducible simulation and test environment. The framework suits research, education, and \emph{proof-of-concept} use cases, offering a transparent and cost-effective alternative to closed, vendor-specific solutions.
-
-\textbf{Keywords:} energy monitoring and control; ESP8266; Prometheus; Grafana; Docker; Kubernetes; Modbus/TCP; max–min fair; water-filling; time-series database; load allocation.
-
+The contributions of the thesis are as follows:
+(i) a unified, Prometheus-compatible metering interface for energy systems
+(ii) a controller implementing max-min fair allocation
+(iii) a container-based reference implementation in Docker Compose and Kubernetes
+(iv) Grafana-based operational and diagnostic dashboards
+(v) a reproducible test environment.
+The framework is suitable even for industrial purposes and offers a cost-effective alternative to closed, manufacturer-specific solutions.
 
 \vfill
 \selectthesislanguage
