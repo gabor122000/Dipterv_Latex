@@ -77,6 +77,17 @@ mert itt egy sor egy ciklus.
 \section{Szcenáriók és elfogadási kritériumok}
 
 \subsection{Alaptesztek: Start/Stop/Reset/Clear}
+
+Az első teszt a vezérlő és a szimulációs környezet 
+alapvető funkcióinak (indítás, leállítás, újraindítás) 
+működését validálja. Itt a cél annak ellenőrzése, 
+hogy a rendszer alapállapotban stabil, a vezérlő parancsokra 
+megfelelően reagál. A bemeneti paramétereket szándékosan úgy 
+állítottam be, hogy ne lépjen fel semmilyen áramkorlátozás vagy 
+megszakítási 
+esemény, így itt kizárólag az alapvető vezérlés 
+ellenőrzésén van a hangsúly. \newline
+
 \textbf{Bemenetek:}
 \begin{itemize}
     \item \texttt{BREAKER\_MAX\_TOTAL=12}
@@ -139,6 +150,20 @@ be vannak kapcsolva ez 1-2 ciklus (3-6~s) után stabilan látszik.
 \end{figure}
 
 \subsection{Alulterhelés: nincs korlátozás}
+
+Ebben a tesztben azt a normál körülmények között is előforduló
+ esetet vizsgálom, 
+amikor a fogyasztói igények összege ($\sum d_i$) kevesebb, mint a 
+maximálisan engedélyezett teljes fogyasztható áram. 
+Itt a cél annyi, ellenőrizni kell, 
+hogy a vezérlő helyesen ismeri fel 
+az alulterhelt állapotot, és nem aktivál 
+semmilyen korlátozási mechanizmust. A várt működés, hogy minden 
+fogyasztó a teljes igényelt áramát kapja meg 
+($\mathrm{effective}_i=d_i$), és a megszakítók is bekapcsolt 
+állapotban maradnak, mivel a terhelés a megengedett sávon belül 
+van. \newline
+
 \textbf{Bemenetek:}
 \begin{itemize}
     \item \texttt{ALLOC\_MAX\_TOTAL=6}
@@ -197,6 +222,15 @@ a megszakítók be vannak kapcsolva mindez 1--2 ciklus (3--6~s) után stabilan l
 \end{figure}
 
 \subsection{Túlterhelés, azonos igények: fair 3/3/3 allokáció}
+
+Itt jelentős túlterhelést vizsgálok, 
+az összesített igény (150 A) ez nagyon meghaladja a globális 
+allokációs keretet (9 A). A teszt célja, hogy ellenőrizze a 
+"max-min fair" elosztási algoritmus helyes működését. 
+A forgatókönyv lényege, hogy minden fogyasztó azonos, a 
+keretnél jóval magasabb igénnyel jelentkezik, így a várt eredmény 
+egy tökéletesen egyenlő, 3 A-es elosztás a fogyasztók között. \newline
+
 \textbf{Bemenetek:}
 \begin{itemize}
     \item \texttt{ALLOC\_MAX\_TOTAL=9}
@@ -251,6 +285,17 @@ a megszakítók bekapcsolva vannak mindez 2 ciklus (6~s) után stabil.
 \end{figure}
 
 \subsection{Dinamikus újraelosztás: a nagy felhasználó kap teret}
+
+Ez a teszt a dinamikus viselkedést vizsgálja. 
+A cél annak demonstrálása, hogy a rendszer nemcsak 
+statikus túlterhelést tud kezelni, hanem képes valós időben 
+reagálni a fogyasztói igények drasztikus változására is. 
+Ez a forgatókönyv azt modellezi, ahogy egyes fogyasztók igénye 
+lecsökken, a felszabaduló kapacitást pedig a rendszer automatikusan 
+és a "max-min fair" elvnek megfelelően újraosztja egy másik, 
+nagy igénnyel jelentkező fogyasztóhoz, miközben az összáram végig 
+a globális kereten belül marad. \newline
+
 \textbf{Bemenetek:}
 \begin{itemize}
     \item \texttt{ALLOC\_MAX\_TOTAL=90}
@@ -328,6 +373,19 @@ a megszakítók végig bekapcsolva maradnak.
 \end{figure}
 
 \subsection{Megszakító hiszterézis}
+
+Itt ebben a tesztben a megszakító vezérlési logikáját 
+vizsgálom. 
+A cél annak megmutatása, hogy a rendszer helyesen kezeli a 
+kétlépcsős kapcsolást: a megszakító leold, ha az összáram meghaladja 
+a felső küszöbértéket (\texttt{BREAKER\_MAX\_TOTAL}), 
+de csak akkor kapcsol vissza, ha az áramfelvétel 
+egy másik alacsonyabb érték (\texttt{BREAKER\_MIN\_TOTAL}) alá esik. 
+Ez a viselkedés biztosítja, hogy a rendszer stabil, sűrű ki-be 
+kapcsolás nem lesz a határérték körüli terhelésingadozás 
+esetén sem. A teszt során az allokációs korlátozás szándékosan nem aktív.
+\newline
+
 \textbf{Bemenetek:}
 \begin{itemize}
     \item \texttt{ALLOC\_MAX\_TOTAL=50}
@@ -410,6 +468,17 @@ cikluson belül egyértelműen tükrözi.
 \end{figure}
 
 \subsection{Leállított mód (STOPPED)}
+
+Ez a teszt azt vizsgálja, hogy a vezérlő 'STOPPED' 
+állapotban megfelelően viselkedik-e. 
+A forgatókönyv igazolja, hogy a rendszer leállítása 
+után a vezérlő valóban felfüggesztésre kerül, és a rendszer 
+"befagyasztja" az utolsó ismert stabil állapotot. Annak ellenére, 
+hogy a leállás alatt a háttérben a bemeneti konfigurációk 
+(pl. allokációs keret) megváltoztatható, a teszt sikeres, ha 
+a vezérlő nem reagál ezekre, nem számol új korlátokat, 
+és nem frissíti a kimeneti naplót. \newline
+
 \textbf{Bemenetek:}
 \begin{itemize}
     \item Kiindulás: a 3.\ szcenárió stabil állapota 
