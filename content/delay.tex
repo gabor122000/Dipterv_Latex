@@ -1,0 +1,177 @@
+% =====================================================================
+\chapter{A vezérlési késleltetés és a rendszer-reakcióidő elemzése}
+% =====================================================================
+
+\section{Bevezetés: A reakcióidő kritikus szerepe}
+
+A dolgozatban bemutatott keretrendszer nem csupán egy statikus 
+felügyeleti eszköz, hanem egy aktív, zárt hurkú vezérlőrendszer 
+(closed-loop control system). Míg a 9. fejezet (Rendszertesztek) 
+a rendszer \emph{funkcionális} helyességét igazolta -- azaz, helyes 
+kiosztást eredményez --, ez a fejezet a rendszer \emph{nem-funkcionális}, 
+időbeli viselkedését, specifikusan a késleltetését (latency) vizsgálja.
+
+Energetikai rendszerek felügyeleténél a reakcióidő kritikus tényező. 
+A keretrendszer alapvető célja, hogy a szoftveres, intelligens 
+allokációval (\texttt{ALLOC\_MAX\_TOTAL}) megelőzze a fizikai, 
+"nyers" védelmi eszközök (megszakítók, \texttt{BREAKER\_MAX\_TOTAL} 
+leoldását. A rendszer gyakorlatilag egy 
+"versenyt fut" az idővel: a szoftveres vezérlőhuroknak gyorsabban 
+kell észlelnie és kezelnie a túlterhelést, mint ahogy a fizikai 
+megszakító áramkörileg reagálna rá.
+
+Ha a vezérlőhurok késleltetése túl magas, a rendszer -- bár 
+funkcionálisan helyes -- a gyakorlatban mégis kudarcot vall, 
+mivel a túlterhelés hatására a megszakítók leoldanak, mielőtt 
+a szoftveres korlátozás (\texttt{cap}) érvénybe léphetne. 
+Ez a fejezet elemzi a késleltetés forrásait és levonja a rendszer 
+beállítására vonatkozó legfontosabb következtetést.
+
+\section{A vezérlési hurok késleltetési komponensei}
+\label{sec:latency-components}
+
+Ahhoz, hogy a teljes rendszer-reakcióidőt (\(T_{total}\)) megértsük, 
+fel kell bontanunk a teljes vezérlési hurkot az egyes komponensek 
+által hozzáadott késleltetésekre. Egy túlterheléses esemény észlelése 
+és kezelése a következő lépésekből áll:
+
+\begin{enumerate}
+    \item \textbf{Mérés (\(T_{measure}\)):} Az \texttt{ESP8266} végpont 
+    árammérő szenzora (pl. SCT-013) fizikailag megméri az. 
+    Ez a lépés közel valós idejű, 
+    késleltetése elhanyagolható (ms nagyságrendű).
+
+    \item \textbf{Publikálás (\(T_{publish}\)):} Az \texttt{ESP8266} 
+    frissíti a saját belső állapotát és elérhetővé teszi azt 
+    a \texttt{/metrics} végponton. Ez szintén gyors, szoftveres művelet.
+
+    \item \textbf{Adatgyűjtés (\(T_{scrape}\)):} A Prometheus szerver, 
+    a konfigurációjában (pl. \texttt{scrape\_interval}) meghatározott 
+    időközönként lekérdezi a végpont \texttt{/metrics} URL-jét. 
+    \emph{Ez a rendszer egyik legjelentősebb késleltetési tényezője.} 
+    Egy tipikus 15 másodperces időköz esetén a mérés és annak 
+    Prometheus általi észlelése között átlagosan 7.5, 
+    legrosszabb esetben 15 másodperc telik el.
+
+    \item \textbf{Adatfeldolgozás (\(T_{query}\)):} A központi 
+    Kontroll Szerver lekérdezi a Prometheus adatbázisból az 
+    összesített és egyedi áramadatokat. 
+    Bár a PromQL lekérdezés gyors, ez a lépés 
+    is a Prometheus belső adatmodelljének frissítési 
+    ciklusától függ.
+
+    \item \textbf{Döntéshozatal (\(T_{algo}\)):} A Python szerver 
+    a beolvasott adatok alapján lefuttatja a \texttt{max--min fair} 
+    algoritmust. Ahogy a 4. fejezetben láttuk, ennek bonyolultsága 
+    \(O(n \log n)\), ami kis (\(n=3..10\)) fogyasztószám esetén 
+    gyakorlatilag azonnali (elhanyagolható \(\mu\)s - ms tartomány).
+
+    \item \textbf{Beavatkozás (\(T_{command}\)):} A szerver a kiszámolt 
+    új korlátokat (\texttt{cap}) elküldi a végpontoknak, jellemzően 
+    Modbus/TCP protokollon keresztül. Ez a lépés 
+    magában foglalja a hálózati késleltetést (Wi-Fi, LAN).
+
+    \item \textbf{Végrehajtás (\(T_{execute}\)):} Az \texttt{ESP8266} 
+    fogadja a Modbus parancsot és beállítja az autótöltő maximális 
+    áramát. Ez is egy gyors, eszköz-oldali művelet.
+\end{enumerate}
+
+A teljes reakcióidő tehát: 
+\begin{equation}
+    T_{total} = T_{measure} + T_{publish} + T_{scrape} + T_{query} 
+              + T_{algo} + T_{command} + T_{execute}
+\end{equation}
+
+\section{A domináns késleltetési tényezők azonosítása}
+
+A \ref{sec:latency-components} pontban felvázolt láncban egyértelműen 
+látszik, hogy a késleltetést nem a számítási kapacitás (az algoritmus) 
+limitálja, hanem az adatgyűjtés architektúrája.
+
+A teljes késleltetést (\(T_{total}\)) alapvetően két tényező dominálja:
+\begin{enumerate}
+    \item \textbf{Prometheus Scrape Interval (\(T_{scrape}\)):} 
+    Ez a rendszer "szívverése". A vezérlőhurok nem tud gyorsabban 
+    reagálni, mint amilyen sűrűn friss adathoz jut. Ha ez az 
+    érték 15 másodperc, a rendszer fizikailag "vakon" repül 
+    15 másodpercig, és csak utólag értesül a korábbi eseményekről.
+    
+    \item \textbf{Hálózati késleltetés (\(T_{command}\)):} 
+    A Wi-Fi-alapú kommunikáció (mind a REST API , 
+    mind a Modbus/TCP esetén) további, változó hosszúságú (jitter) 
+    késleltetést vihet a rendszerbe, különösen terhelt vagy 
+    zajos hálózati környezetben.
+\end{enumerate}
+
+Míg a hálózati késleltetés általában tíz-száz milliszekundum 
+nagyságrendű, a \texttt{scrape\_interval} másodperces nagyságrendű. 
+Ebből következik, hogy \textbf{a rendszer reakcióidejét döntő 
+mértékben a Prometheus adatgyűjtési gyakorisága határozza meg.}
+
+\section{A védelmi beállítások és a szoftveres vezérlés kapcsolata}
+
+Ez a késleltetés-elemzés közvetlen és kritikus hatással van a rendszer 
+védelmi beállításainak konfigurálására. A keretrendszer két védelmi 
+szintet valósít meg:
+
+\begin{itemize}
+    \item \textbf{1. Szoftveres Védelem (Intelligens Allokáció):} 
+    Ezt a \texttt{ALLOC\_MAX\_TOTAL} keret szabályozza. Célja a 
+    \emph{komfort} és a \emph{hatékonyság} biztosítása, a keretek 
+    betartása és a leoldások aktív \emph{megelőzése}. 
+    Reakcióideje lassú (\(T_{total}\)).
+    
+    \item \textbf{2. Fizikai Védelem (Biztonsági Megszakító):} 
+    Ezt a \texttt{BREAKER\_MAX\_TOTAL} küszöb határozza meg. 
+    Célja a \emph{biztonság}, a hálózat fizikai védelme. 
+    Reakcióideje azonnali (fizikai).
+\end{itemize}
+
+A rendszer stabil működésének feltétele, hogy e két szint 
+megfelelően legyen összehangolva. A \texttt{BREAKER\_MAX\_TOTAL} 
+értékét nem lehet a \texttt{ALLOC\_MAX\_TOTAL} értékéhez közel beállítani.
+
+Szükséges egy \textbf{biztonsági puffer} (headroom) fenntartása 
+a két küszöb között. Ennek a puffernek nagyobbnak kell lennie, 
+mint amennyi áramnövekedés a rendszerben történhet 
+a \emph{teljes szoftveres reakcióidő} (\(T_{total}\)) alatt.
+
+\paragraph{Konfigurációs példa.}
+Tegyük fel, hogy:
+\begin{itemize}
+    \item A szoftveres keret \(\texttt{ALLOC\_MAX\_TOTAL} = 90\,A\).
+    \item A Prometheus \texttt{scrape\_interval} és a teljes hurok 
+          késleltetése \(\textbf{\(T_{total}\) = 15\,s}\).
+    \item A csatlakoztatott eszközök (pl. autótöltők) képesek 
+          15 másodperc alatt további 20\,A terhelést bekapcsolni 
+          (pl. egy új autó csatlakozik), mielőtt a rendszer reagálna.
+\end{itemize}
+
+Ebben az esetben a \texttt{BREAKER\_MAX\_TOTAL} küszöbértéket legalább 
+\(90\,A + 20\,A = 110\,A\)-re (vagy még magasabbra) kell állítani.
+
+Ha a fizikai megszakítót túl "szűkre" állítanánk (pl. 95\,A-re), 
+a rendszer instabillá válna. Egy hirtelen 20\,A-es terhelésnövekedés 
+(90\,A \(\rightarrow\) 110\,A) azonnal leoldaná a 95\,A-es fizikai 
+megszakítót, jóval azelőtt, hogy a 15 másodperces késleltetésű 
+szoftveres hurok egyáltalán észlelhette volna a problémát és 
+beavatkozhatott volna az allokációval.
+
+\section{Következtetések}
+
+A keretrendszer vezérlési sebességét nem a \texttt{max--min fair} 
+algoritmus számítási bonyolultsága, hanem a \texttt{pull}-alapú 
+adatgyűjtési architektúra (Prometheus) késleltetése határozza meg. 
+Ez a szoftveres késleltetés (\(T_{total}\)) a rendszer egyik 
+legfontosabb paramétere.
+
+A fizikai védelmi beállításokat (\texttt{BREAKER\_MAX\_TOTAL}) 
+kötelezően ennek a szoftveres késleltetésnek a figyelembevételével 
+kell konfigurálni. A két védelmi szint között elegendő 
+"fejteret" (headroom) kell hagyni, hogy a szoftveres allokációnak 
+legyen ideje reagálni a terhelésváltozásokra, mielőtt a fizikai 
+védelem szükségtelenül megszakítaná a szolgáltatást. 
+A rendszer finomhangolása tehát egy egyensúlyozás a gyors 
+adatgyűjtés (alacsony \texttt{scrape\_interval}, magas hálózati terhelés) 
+és a nagyobb védelmi puffer (magasabb \texttt{BREAKER\_MAX\_TOTAL}) 
+között.

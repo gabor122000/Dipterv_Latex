@@ -73,3 +73,53 @@ három felé oszlik: \(a=[3,\,7.33,\,7.33,\,7.33]\) A.
 A limitek csak \(\pm 10^{-3}\) A változás felett frissülnek a fogyasztók felé (zajcsillapítás), 
 a „nincs korlát” állapotot nagy \(\texttt{INF\_CAP}\) érték reprezentálja. Ha a nyers igény összeg a keret alá esik, 
 a limitek feloldódnak.
+
+\subsection{Alternatív allokációs stratégiák}
+A globális keret elosztására több lehetőség is fennáll. A megfelelő algoritmus 
+választása sokat tud javítani a rendszer hatékonyságán, ezért nagyon fontos. A \texttt{max--min fair} 
+elv mellett kettő alternatívát találtam.
+
+\paragraph{Proporcionális elosztás.}
+Ennél a megközelítésnél minden fogyasztó a teljes igény (\(\sum_j d_j\)) arányában részesül a 
+rendelkezésre álló keretből, amennyiben \(\sum_j d_j > B | B = Globál keret\). A kiosztás képlete: 
+\( a_i = d_i \times (B / \sum_j d_j) \).
+\begin{itemize}
+    \item \emph{Példa:} Ha a keret \(B=90\)\,A, és az igények \(d=[50, 50, 100]\), 
+    a teljes igény itt ekkor, \(\sum d_j = 200\)\,A. Az arányos kiosztás 
+    \(a \approx [22.5, 22.5, 45]\)\,A lenne.
+    \item \emph{Előnye:} Az egyik legegyszerűbb algoritmus.
+    \item \emph{Hátrány:} Ez a stratégia a "nagy" fogyasztóknak 
+    kedvez, és a kis igényűeket "éhezteti" (starvation).
+\end{itemize}
+
+
+\paragraph{Prioritásos (súlyozott) elosztás.}
+Ebben az esetben minden fogyasztó kap \(w_i\) prioritási szintet 
+(súlyt). Ha túlterhelés lépne fel a rendszer először a magasabb prioritású 
+fogyasztókat elégíti ki, és a maradék keretből kapnak az alacsonyabb 
+prioritású fogyasztók.
+\begin{itemize}
+    \item \emph{Előny:} Lehetővé teszi a "prémium" ügyfél fogalmát pl.: adott emberek 
+    autótöltője mindig kap áramot.
+    \item \emph{Hátrány:} Szintén bevezeti az "éheztetés" (starvation) problémáját, ahol egy 
+    alacsony prioritású végpont akár soha nem kap erőforrást.
+    A rendszer komplexitása nő, és a konfiguráció nehézkessé válik.
+\end{itemize}
+
+
+\paragraph{A választás indoklása.}
+Az alternatívákkal szemben azért esett a választás a \textbf{max--min fair} elosztásra mert ez
+biztosítja a legjobb egyensúlyt az egyszerűség és az igazságosság között. 
+Motivációk között megfogalmazott pontokat teljesíti:
+
+\begin{enumerate}
+    \item \emph{Védi a kis fogyasztókat:} Garantálja, hogy aki keveset kér, az 
+    megkapja, amíg a keret ezt egyáltalán lehetővé teszi. Ezzel elkerüli az 
+    arányos elosztás fő problémáját az "éheztetést".
+    \item \emph{Igazságos a nagy fogyasztók között:} A fennmaradó kapacitást 
+    egyenlően osztja szét a nagy igényű fogyasztók között, anélkül, hogy 
+    bonyolult prioritási problémákat kéne megoldani.
+    \item \emph{Determinisztikus és stabil:} Az algoritmus viselkedése kiszámítható, 
+    és könnyen implementálható.
+\end{enumerate}
+Ezek a tulajdonságok miatt esett a választás a Max--Min fair elvre.
