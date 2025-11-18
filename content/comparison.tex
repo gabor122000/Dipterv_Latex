@@ -2,7 +2,24 @@
 
 \section{Meglévő ipari megoldások}
 
+A piaci megoldások bemutatására 
+két piacvezető gyártó, a Schneider Electric és a Siemens
+rendszereit választottam elemzésre.
+
+Ezek a rendszerek bemutatása azért indokolt,
+mert jelenleg ők képviselik az ipari sztenderdet
+az energetikai felügyelet területén.
+Ezek adják a referenciaalapot,
+amelyhez viszonyítva reálisan értékelhető
+a dolgozatban bemutatott saját, költséghatékony fejlesztés
+teljesítménye és korlátai.
+
 \subsection{Schneider Power Monitoring Expert}
+
+A Schneider Electric kínálatából a Power Monitoring Expert szoftvert vizsgálom,
+ami a kritikus energiaellátású létesítmények felügyeletére készült.
+A rendszer célja, hogy átláthatóságot biztosítson
+az energiaelosztó hálózatban.
 
 \subsubsection{Alapfunkciók}
 
@@ -34,6 +51,11 @@ Ezenkívül segít a mögöttes problémák megtalálásában is.\cite{sePME}
 
 \subsection{Siemens SIMATIC Energy Suite}
 
+Hasonló helyzetben áll a piacon a Siemens megoldása,
+a SIMATIC Energy Suite,
+ez közvetlenül a gyártóautomatizálási környezetbe integrálódik.
+A rendszer hasonló funkciókkal rendelkezik mint a Schneider rendszere.
+
 \subsubsection{Alapfunkciók}
 
 A Siemens SIMATIC Energy Management rendszere integrált tehát nem csak megfigyelésre alkalmas hanem vezérlésre is. 
@@ -59,62 +81,142 @@ mint az előzőleg taglalt rendszer.\cite{sieEMS}
     \label{fig:siemens-ems}
 \end{figure}
 
-\section{Saját megoldás}
 
-Egy mondatban: a saját eszközkészletem (ESP-8266 + Prometheus + Grafana + Python) 
-sokkal  olcsóbb és könyebben módosítható, de a Schneider 
-EcoStruxure Power Monitoring Expert (PME) és a Siemens SIMATIC Energy Suite 
-olyan pontosságot, energiaminőség-elemzést, ISO-50001-megfelelőséget és 24/7-es 
-gyártói támogatást biztosít, aminek megvalósítása nagy munkát és pénzt igényelne.
+
+\section{Nyílt forráskódú és közösségi megoldások}
+
+Az ipari rendszerek mellett az elmúlt években megjelentek 
+a rugalmasabb, alacsonyabb költségű, jellemzően a "Smart Home" 
+és a kisvállalati szegmensre fókuszáló nyílt megoldások is. 
+Ezek nem rendelkeznek ipari tanúsítványokkal, 
+viszont egyszerűségük miatt jó összehasonlítási alapot képeznek.
+
+\subsection{Home Assistant}
+
+A Home Assistant jelenleg az egyik legnépszerűbb nyílt forráskódú 
+otthonautomatizálási platform. 
+Fő erőssége, hogy lényegében bármilyen IoT eszközt képes integrálni, 
+ami lehetővé teszi többek között energetikai mérők kezelését is.  \cite{HomeAssistant}
+
+\begin{itemize}
+    \item \textbf{Előnyök:} Ingyenes, nagy közösség, 
+    helyi működés, vizuális felület.
+    \item \textbf{Hátrányok:} Főként otthoni felhasználásra tervezték, 
+    az idősoros adatok hosszú távú tárolása és elemzése 
+    korlátozott, 
+    nem specifikusan energetikai szabályozásra lett kitalálva.
+\end{itemize}
+
+\subsection{OpenEnergyMonitor (Emoncms)}
+
+Az OpenEnergyMonitor projekt kifejezetten az energetikai mérésekre specializálódott. 
+Szoftveres központja, az Emoncms egy webes alkalmazás 
+elektromos adatok feldolgozására és vizualizációjára. \cite{EmonCMS}
+
+\begin{itemize}
+    \item \textbf{Előnyök:} Ez már energia-fókuszú.
+    \item \textbf{Hátrányok:} A vezérlési funkciók 
+    nem túl hangsúlyosak.
+    A hardveres rendszer kötöttebb.
+\end{itemize}
+
+\section{A vizsgálat tanulságai és a tervezési követelmények}
+
+A piaci körkép alapján látható, hogy létezik egy szakadék 
+a drága, zárt ipari rendszerek és az általános célú hobbi megoldások között. 
+Míg az ipari eszközök garantálják a pontosságot és a szabványosságot, 
+addig költségvonzatuk megnehezíti használatukat kisebb projektekben.
+
+A saját rendszeremmel szemben ezért nem cél a Siemens vagy Schneider 
+megoldásaival való közvetlen verseny. 
+A cél egy olyan köztes megoldás létrehozása, 
+ami ötvözi a nyílt rendszerek rugalmasságát 
+egy ipari jellegű szabályozási logikával.
+
+Ez alapján a saját fejlesztésű rendszerrel szemben 
+az alábbi \textbf{elvárásokat} fogalmaztam meg:
+
+\begin{itemize}
+    \item Modularitás és Nyíltság
+    \item Költséghatékonyság
+    \item Aktív beavatkozási képesség
+    \item Reprodukálhatóság
+\end{itemize}
+
+Összefoglalva: a tervezett rendszer a csináld magad (DIY) árkategóriában 
+kíván megvalósítani egy, a funkcióit tekintve az ipari rendszereket megközelítő, 
+zárt szabályozási rendszert.
 
 \newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
 
 \begin{table}[ht]
     \centering
-    \begin{tabular}{|P{2.5cm}|P{3.5cm}|P{3.5cm}|P{3.5cm}|}
+    \small % Kicsit kisebb betűméret, hogy minden kényelmesen elférjen
+    \renewcommand{\arraystretch}{1.4} % Nagyobb sorköz a jobb olvashatóságért
+    
+    % X oszlopok automatikusan tördelik a szöveget a rendelkezésre álló helyen
+    \begin{tabularx}{\textwidth}{|l|X|X|X|}
     \hline
-    \textbf{Jellemző} & \textbf{Nyílt forráskódú megoldás} & \textbf{Schneider PME} & \textbf{Siemens Energy Suite} \\
+    
+    \textbf{Jellemző} & 
+    \textbf{Tervezett rendszer} & 
+    \textbf{Schneider \newline PME} & 
+    \textbf{Siemens \newline Energy Suite} \\ 
     \hline
-    Peremi eszközök &
-    ESP8266 + CT &
-    PowerLogic / ION \& PowerTag mérők, megszakítók, átjárók &
-    S7-1500 PLC + Sentron PAC, 7KM PAC, megszakítók \\
     \hline
-    Adatátvitel &
-    Wi-Fi és HTTPS REST &
-    Modbus/TCP &
-    PROFINET\\
+    
+    % --- TECHNOLÓGIAI ALAPOK ---
+    \multicolumn{4}{|c|}{\textit{Technológiai alapok}} \\
     \hline
-    Adatbázis &
-    Prometheus &
-    Beépített SQL Express &
-    Integrált WinCC SQL archívum \\
+    
+    \textbf{Eszközök} & 
+    ESP8266 mikrovezérlő \newline + Áramváltó (CT) & 
+    PowerLogic / ION mérők, \newline Smart megszakítók & 
+    S7-1500 PLC, \newline Sentron PAC mérők \\ 
     \hline
-    Vizualizáció &
-    Grafana &
-    Webalapú HTML5 irányítópult &
-    WinCC HMI képernyő \\
+    
+    \textbf{Kommunikáció} & 
+    Wi-Fi (IEEE 802.11) \newline REST API / JSON & 
+    Zárt ipari hálózat \newline Modbus/TCP & 
+    Ipari Ethernet \newline PROFINET \\ 
     \hline
-    Analitika &
-    Ami lekódolásra kerül &
-    Harmonikus, villódzás, EN 50160 megfelelés &
-    Automatikus terheléskikapcsolás ISO 50001 \\
+    
+    \textbf{Adatbázis} & 
+    Prometheus \newline (Idősoros DB) & 
+    MS SQL Server \newline (Relációs DB) & 
+    WinCC Archívum \newline (Integrált) \\ 
     \hline
-    Licenc költségek &
-    Nincs &
-    Eszközcsomagok: 5-től korlátlanig; 50-es csomag tízezer eurós nagyságrend &
-    Futtatási licenc eszközönként ezer eurós nagyságrend \\
+    
+    \textbf{Vizualizáció} & 
+    Grafana \newline (Webes Dashboard) & 
+    Power Monitoring Expert \newline (Web kliens) & 
+    WinCC Professional \newline (HMI / SCADA) \\ 
     \hline
-    Tipikus ár 50 mérőpontra &
-    kb. 1 000 € (panelek + szenzorok + szerver) &
-    kb. 10 ezer € (mérők + licenc + szerver) &
-    kb. 10 ezer € (mérők, PLC, licencek, TIA Portal) \\
+    
+    % --- FUNKCIONALITÁS ÉS ÜZLET ---
+    \multicolumn{4}{|c|}{\textit{Funkcionalitás és Költségek}} \\
     \hline
-    Támogatás &
-    Közösségi támogatás; nincs hivatalos tanúsítvány &
-    Gyártói 24/7, ISO 50001 &
-    Gyártói 24/7, TÜV EN 13849 \\
+    
+    \textbf{Analitika} & 
+    Alapvető mérés \newline + Water-filling algoritmus & 
+    Energiaminőség (EN 50160), \newline Zavarelemzés & 
+    Terhelésmenedzsment, \newline ISO 50001 riportok \\ 
     \hline
-    \end{tabular}\caption{Rendszeráttekintés - összehasonlítás}
-    \label{tab:osszehasonlitas}
+    
+    \textbf{Bekerülési költség} & 
+    \textbf{Alacsony} \newline (< 1 000 €) & 
+    \textbf{Magas} \newline (Licenc + Eszközök) & 
+    \textbf{Magas} \newline (Licenc + PLC hardver) \\ 
+    \hline
+    
+    \textbf{Támogatás} & 
+    Közösségi (garancia nélkül) & 
+    Gyártói 24/7 Support, \newline Hivatalos tanúsítvány & 
+    Gyártói Support, \newline TÜV / Szabványi garancia \\ 
+    \hline
+    
+    \end{tabularx}
+    
+    \caption{A tervezett rendszer összehasonlítása az ipari sztenderdekkel}
+    \label{tab:rendszer_osszehasonlitas}
 \end{table}
