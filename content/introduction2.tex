@@ -1,0 +1,76 @@
+\chapter{Bevezetés}
+
+% ----------------------------------------------------------------
+% 1. GLOBÁLIS ENERGETIKAI KONTEXTUS
+% ----------------------------------------------------------------
+
+Az elmúlt évtizedben az energetikai szektor, és különösen a villamosenergia-rendszer, 
+alapvető változásokon ment keresztül. 
+A megújuló energiaforrások - elsősorban a nap- és szélenergia - 
+exponenciális terjedése, valamint az elektromobilitás megjelenése 
+új kihívások elé állította a hálózatüzemeltetőket. 
+A hagyományos, egyirányú energiaáramlásra méretezett hálózatoknak 
+ma már dinamikus, kétirányú terheléseket kell kezelniük, 
+ahol a fogyasztás és a termelés egyensúlya folyamatosan ingadozik.
+
+A jövő energetikája adatvezérelt: a mérés, az adatfeldolgozás és 
+a beavatkozás ciklusidejének drasztikus csökkenése a kulcs 
+a fenntartható üzemeltetéshez.
+
+% ----------------------------------------------------------------
+% 2. MOTIVÁCIÓ ÉS A PIACI KÖRNYEZET (IT/OT KONVERGENCIA)
+% ----------------------------------------------------------------
+
+\section{Motiváció és ipari környezet}
+
+Az épületautomatizálás és az ipari folyamatirányítás területén 
+jelenleg egy érdekes kettősség figyelhető meg. 
+A piacon domináns nagyvállalati megoldások (például Siemens, Schneider Electric) 
+robusztus, szabványosított hardvert és szoftvert kínálnak. 
+Ezek a rendszerek zárt ökoszisztémákra épülnek. 
+Magas licencköltségeik, egyedi kommunikációs protokolljaik és 
+a gyártói függőség gyakran gátat szabnak a kisebb felhasználóknak.
+
+Ezzel párhuzamosan, az Ipar 4.0 rendszerek részeként, 
+az olcsó mikrokontrollerek és beágyazott rendszerek
+ma már olyan számítási kapacitással és kommunikációs képességekkel rendelkeznek, 
+amelyek néhány éve még csak drága ipari PC-k kiváltságai voltak. 
+Ez a technológiai demokratizálódás teremt alapot dolgozatom motivációjának: 
+lehetséges-e ipari szemléletű, megbízható felügyeleti rendszert építeni 
+ezen költséghatékony, nyílt eszközök felhasználásával?
+
+% ----------------------------------------------------------------
+% 4. CÉLKITŰZÉSEK
+% ----------------------------------------------------------------
+
+\section{A dolgozat célkitűzései}
+
+Jelen diplomaterv célja egy olyan moduláris, nyílt forráskódú keretrendszer 
+tervezése és megvalósítása, amely alternatívát kínál 
+a drága ipari megoldásokkal szemben kutatási és fejlesztési célokra. 
+A rendszernek képesnek kell lennie a teljes mérési-beavatkozási lánc kezelésére.
+
+A megvalósítás során az alábbi konkrét célokat tűztem ki:
+
+\begin{itemize}
+    \item \textbf{Architektúra tervezés:} 
+    Egy egységesített, konténerizált szoftverkörnyezet kialakítása 
+    a következő elemekkel 
+    idősoros adatgyűjtés (Prometheus), vezérlés (Python) 
+    és a vizualizáció (Grafana).
+    
+    \item \textbf{Végponti integráció:} 
+    Költséghatékony IoT eszközök (ESP8266) illesztése a rendszerbe 
+    szabványos ipari (Modbus/TCP) és webes (REST API) protokollokon keresztül.
+    
+    \item \textbf{Algoritmikus vezérlés:} 
+    A water-filling allokációs algoritmus implementálása.
+    
+    \item \textbf{Validáció és vizualizáció:} 
+    A rendszer működésének igazolása valós idejű mérésekkel, 
+    valamint egy átlátható kezelőfelület létrehozása az üzemeltető számára.
+\end{itemize}
+
+A dolgozat bemutatja, hogy a nyílt szabványok és a modern szoftvertechnológiák 
+megfelelő kombinációjával létrehozható egy olyan rugalmas energetikai menedzsment rendszer, 
+amely funkcióban hasonló, mint a drágább ipari megoldásokat.
