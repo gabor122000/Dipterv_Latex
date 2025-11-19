@@ -1,11 +1,15 @@
 \chapter{Keretrendszer}
 
+A tervezett rendszer többrétegű, moduláris felépítést követ, ez magában foglalja a 
+fizikai végpontokat, a kommunikációs hálózatot és a felhőalapú vezérlőt is. 
+A rendszer összetevőinek kapcsolatát a \ref{fig:Rendszerarchitektúra}. ábra szemlélteti.
+
 \section{Rendszerarchitektúra áttekintése}
 
 Az áramérzékelők (áramváltó bilincsek) mérik az elektromos áramot és az 
 adatokat egy ESP8266 gyűjti, ezek pedig a központi vezérlőhöz táplálják, 
 amely vezérlőparancsokat küld visszafelé az elektromos járművek töltőinek 
-a megengedett áram beállításához.
+a megengedett áram beállításához. 
 
 Az ESP8266-alapú érzékelőcsomópontok mindegyik elektromos töltőnél el vannak helyezve, 
 hogy valós időben mérjék a töltőáramot.
@@ -64,12 +68,10 @@ következőket tartalmazza:
 
 \section{Eszközök}
 
-\subsection{Végpontok}
-
-\subsubsection{ESP8266 és AC árammérő szenzorok}
+\subsection{ESP8266 és AC árammérő szenzorok}
 
 A pontos árammérés minden elektromos töltőnél kritikus a rendszer számára. 
-Az ESP8266-ot (NodeMCU) nem invazív váltakozóáram-érzékelőkkel 
+Az ESP8266-ot (NodeMCU) aminek az io felosztása \ref{fig:pinout} ábrán látszik, nem invazív váltakozóáram-érzékelőkkel 
 párosítva használjuk a megfelelő áramkörök által felvett áramerősség mérésére. Egy megfelelő
 érzékelő az YHDC SCT-013 sorozatú bilincses áramtranszformátor, például az SCT-013-030 modell, 
 ami 30 A AC  feszültségre van méretezve. Az SCT-013 egy osztott magú áramváltó így könnyű a 
@@ -81,7 +83,7 @@ ad ki. Különösen az SCT-013-030 körülbelül 0-1 V AC (effektív) kimenetet 
 
 \begin{figure}[!ht]
     \centering
-    \includegraphics[width=0.8\textwidth, keepaspectratio]{figures/NodeMCU.jpg}
+    \includegraphics[width=0.5\textwidth, keepaspectratio]{figures/NodeMCU.jpg}
     \caption{NodeMCU (ESP8266) \cite{patel_nodemcu}} 
 \end{figure}
 
@@ -95,7 +97,7 @@ már rendelkeznek belső ellenállással, így nincs szükség további terhelé
 
 \begin{figure}[!ht]
     \centering
-    \includegraphics[width=0.8\textwidth, keepaspectratio]{figures/CT.jpg}
+    \includegraphics[width=0.5\textwidth, keepaspectratio]{figures/CT.jpg}
     \caption{SCT-013 áramváltó \cite{mikroelektronik:sct013}} 
 \end{figure}
 
@@ -110,7 +112,8 @@ a másik pedig a középponthoz körülbelül 1,65 V a 3,3 V-os táp miatt.
 \begin{figure}[!ht]
     \centering
     \includegraphics[width=0.8\textwidth, keepaspectratio]{figures/NodeMCU-Devkit-Pinouts.png}
-    \caption{Pinout \cite{electronicwings_nodemcu2023}} 
+    \caption{Pinout \cite{electronicwings_nodemcu2023}}
+    \label{fig:pinout}
 \end{figure}
 
 Mindegyik ESP8266 tápellátást kap lehetőleg 5 V-os USB-adapterrel az EV-töltő kiegészítő tápellátásával 
@@ -118,11 +121,13 @@ Mindegyik ESP8266 tápellátást kap lehetőleg 5 V-os USB-adapterrel az EV-töl
 A mikrokontroller a megírt kódot futtatja, csatlakozik a Wi-Fi-hez, és folyamatosan méri az áramerősséget. 
 Ezt úgy küldi a szervernek, hogy már könnyű legyen prometheusnak tovább küldeni.
 
-\subsubsection{Mért eszközök}
+\subsection{Mért eszközök}
 
-Különböző eszközök mérését hajtok végre egy hálózatban, amiknél, más paraméterek mérésére van szükségünk.
+A rendszer a hálózat különböző pontjain elhelyezkedő és akár eltérő funkciójú eszközök felügyeletét látja el. 
+Mivel az egyes eszközök működése eltér, 
+a monitorozás során gyűjtött paraméterek is eszerint változnak.
 
-Ilyen eszközök a megszakítók, itt érzékelnünk kell:
+A rendszer az alábbi eszközöket és adatpontokat különbözteti meg:
 \begin{itemize}
     \item \textbf{Megszakítók:}
     \begin{itemize}
@@ -175,30 +180,38 @@ teljesítményt el tud diszipálni folyamatos terhelés melett is.
 
 \section{Kommunikáció}
 
+A rendszer kommunikációs topológiáját és az adatfolyam irányait a \ref{fig:Rendszerarchitektúra}. ábra szemlélteti. 
+Ezután ennek a megvalósításával folytatom a két fő protokoll, a HTTP és a Modbus mentén.
+
 \subsection{ESP8266 és Szerver között (Wi-Fi és REST API)}
 
 A kommunikációhoz az ESP8266 végpontok Wi-Fi-t használnak a mérések továbbítására a vezérlő Flask szerverre. 
 Indításkor minden ESP8266 csatlakozik a konfigurált 
-Wi-Fi hozzáférési ponthoz. 
+Wi-Fi hozzáférési ponthoz.
+A kód első lépése a kapcsolat felépítése a konfigurált Wi-Fi hozzáférési ponttal.
+Ehhez az ESP8266 standard könyvtárát használtam,
+ahogy az alábbi firmware-részlet is mutatja:
 \begin{lstlisting}
     (pl. WiFi.begin(ssid, jelszó))
 \end{lstlisting}
-Itt az ESP8266 beépített WiFi könyvtárat használtam.
+
 \cite{techtutorialsx:esp8266flask}
 A csatlakozást követően a csomópont képes HTTP vagy esetünkben HTTPS kéréseket küldeni a szerver IP-címére. 
 Egy egyszerű RESTful API-t implementáltam a Flask szerveren az adatok fogadásához. 
 Minden fizikai végpont Prometheus adatbázis jellegű kommunikációhoz is használt végponton hirdeti a mért adatait.
-\begin{lstlisting}
+
+\begin{lstlisting}[caption={A Flask szerver indítása Python-ban}]
     app.run(host="0.0.0.0", port=6000, ssl_context=('cert.pem', 'key.pem'))
 \end{lstlisting}
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Az API végpont URL struktúrája}]
     http://<szerver_ip>:6000/metrics
-\end{lstlisting} 
-A JSON adatstruktúra a következő:
+\end{lstlisting}
 
-\begin{lstlisting}
-    def metrics():
+A válaszgeneráló logika az alábbi Python kódrészletben látható:
+
+\begin{lstlisting}[caption={A JSON választ generáló Python függvény}]
+def metrics():
     return jsonify({
         "simulator_id": simulator_id,
         "current": current_value,
