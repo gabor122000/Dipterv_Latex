@@ -1,9 +1,29 @@
-% =====================================================================
 \chapter{Max--min fair (water-filling) elosztás}
 
 \section{Elméleti háttér és cél}
 
+\subsection{A szabályozási feladat és definíciók}
+
+A dolgozat rendszerének fő feladata, hogy a rendelkezésre álló, 
+korlátos villamos teljesítményt dinamikusan ossza el a fogyasztók (esetemben elektromos autótöltők) között úgy, 
+hogy a hálózat fizikai védelme ne oldjon le, így a felhasználható áramon belül maradva maximalizáljuk 
+a lehetőségeket.
+
+Az elosztási algoritmus ismertetéséhez, szükséges definiálni a 
+rendszerparamétereket, amik a vezérlő működésének alapját képzik. 
+A rendszerben két védelem stalálható:
+
+\begin{itemize}
+    \item Fizikai korlát (\texttt{BREAKER\_MAX\_TOTAL})
+    \item Allokációs keret (\texttt{ALLOC\_MAX\_TOTAL})
+\end{itemize}
+
+A bemutatott \emph{max--min fair} algoritmus fő feladata tehát az, 
+hogy a fogyasztók igényeit úgy elégítse ki, hogy összegük soha ne lépje át a 
+szoftveres \texttt{ALLOC\_MAX\_TOTAL} keretet.
+
 \subsection{Motiváció és cél}
+
 A szimulált fogyasztók  áramigénye (\(d_i\)) időben változik. 
 Adott egy globális, maximum áramérték \(\,B=\texttt{ALLOC\_MAX\_TOTAL}\,\) amperben, 
 ennél a tényleges összáram nem lehet nagyobb. A cél egy olyan kiosztás \(\,a_i\) meghatározása, amely

@@ -1,10 +1,20 @@
 \chapter{Komponensek megvalósítása}
 
+Ebben a fejezetben a megtervezett rendszerarchitektúra gyakorlati megvalósítását ismertetem. 
+Részletesebben megmutatom a hardveres és szoftveres komponenseket, 
+a kommunikációs protokollok implementációját, valamint az adatgyűjtő és megjelenítő rétegeket. 
+A fejezet a fizikai rétegtől a "végpontoktól" halad a magasabb szintű szoftveres rétegekig 
+(adatbázis, vizualizáció).
+
 \section{Végpontok}
+
+A rendszerben a fizikai réteget a végpontok alkotják, amik közvetlen kapcsolatban állnak a villamos hálózattal. 
+Feladatuk a kommunikáció biztosítása: egyrészt a mérési adatok (áramfelvétel, státusz) 
+továbbítása a vezérlő felé, másrészt a beavatkozó parancsok végrehajtása a fizikai eszközökön. 
 
 \subsection{Autótöltő}
 
-\subsubsection{Bevezetés}
+\subsubsection{Hardver}
 A rendszer egy ESP8266 mikrokontroller köré épül, amely két elsődleges funkciót lát el:
 \begin{itemize}
     \item Árammérés: Folyamatosan méri az autótöltők által felvett elektromos áramot. Összegyűjti és a Prometheus, 
@@ -20,7 +30,21 @@ A rendszer egy ESP8266 mikrokontroller köré épül, amely két elsődleges fun
     \caption{Autótöltő \cite{SE:EVLINK}} 
 \end{figure}
 
-\subsubsection{Megvalósítás}
+\begin{itemize}
+    \item \textbf{RS485:}
+    Az ESP8266 natívan nem támogatja az RS485 kommunikációt, viszont tudunk használni egy RS485 adó-vevőt 
+    (pl. MAX485). Ez az ESP8266 UART jeleit RS485-re alakítja, ami az ipari kommunikációban elterjedt szabvány, 
+    ezért jellemzően a töltőkben és egyéb épületinformatikai eszközökben is megtalálható.
+    \item \textbf{ModbusMaster könyvtár:}
+    Itt az open source ModbusMaster könyvtárat \cite{ModbusMaster} használtam a továbbítás egyszerűsítésére.
+    \item \textbf{Átviteli vezérlés:}
+    Az előbb említett adó-vevőnek szüksége van egy úgynevezett DE/RE (Driver Enable/Receiver Enable) vezérlőpinre. 
+    Amit viszont egyszerű megvalósítani az ESP8266-on egy digitális pin segítségével amire itt a D2 lett használva. 
+    Ezzel tudunk később adó és vevő módok között kapcsolni. Küldéshez a pin HIGH (adási mód), ezután a 
+    vételhez, pedig (vételi mód) állapotba kerül, ekkor LOW.
+\end{itemize}
+
+\subsubsection{Szoftver}
 Itt az ESP8266 firmware főbb részeit elemzem.
 \paragraph{WiFi és HTTP-kiszolgáló beállítása}
 Kezdésnek az ESP8266 csatlakozik WiFi-re és ezzel a helyi hálózatra a megadott SSID és jelszóval. 
@@ -28,7 +52,7 @@ A csatlakozást követően az eszköz az ESP8266WebServer könyvtár segítség�
 Ez a szerver egy kijelölt porton (pl. 8663) figyel, és a /metrics végpontot teszi közzé, 
 ahol közli az adatokat a központ vezérlővel.
 
-\subsubsection{Mérési adatok elküldése}
+\paragraph{Mérési adatok elküldése}
 
 A \texttt{sendMetricsToEndpoint()} függvény formázza a méréseket Prometheus-szerű szöveges formába. A metrikák a következőket tartalmazzák:
 
@@ -41,13 +65,13 @@ Ez a funkció a Prometheus-kompatibilis mért érték és címkézési formátum
 Amikor például a vezérlő szerver lekéri a \texttt{/metrics} végpontot, a HTTPS-kiszolgáló 
 \texttt{200 OK} státusszal küldi vissza ezeket a formázott metrikákat, amennyiben minden rendben ment.
 
-\subsubsection{Main loop}
+\paragraph{Main loop}
 A loop() funkcióban az ESP8266 folyamatosan kezeli a bejövő HTTPS kéréseket és 30 másodpercenként 
 az eszköz meghívja a queryPrometheus() függvényt, hogy frissítse az összesített metrikát. 
 Ez az időszakos lekérdezési mechanizmus biztosítja, hogy a helyi mérések folyamatosan frissek 
 legyenek és döntéshozatal alapjául lehessen venni őket.
 
-\subsubsection{Kommunikáció}
+\paragraph{Kommunikáció}
 A rendszer itt is a biztonságos adatátvitel érdekében minden hálózati kommunikációhoz HTTPS protokollt használ. 
 A legfontosabb adatáramlások a következők:
 
@@ -64,23 +88,6 @@ Ez a funkció az autó töltő áramhatárának beállítására szolgál.
 Az itt használt Modbus RTU használatával az ESP8266 lesz a master, ami „Write Single Register” 
 parancsot ad az autó töltőnek (Modbus slave). Az autós töltő áramkorlátja egy előre meghatározott 
 regiszterben található.
-
-\paragraph{Hardver}
-
-\begin{itemize}
-    \item \textbf{RS485:}
-    Az ESP8266 natívan nem támogatja az RS485 kommunikációt, viszont tudunk használni egy RS485 adó-vevőt 
-    (pl. MAX485). Ez az ESP8266 UART jeleit RS485-re alakítja, ami az ipari kommunikációban elterjedt szabvány, 
-    ezért jellemzően a töltőkben és egyéb épületinformatikai eszközökben is megtalálható.
-    \item \textbf{ModbusMaster könyvtár:}
-    Itt az open source ModbusMaster könyvtárat \cite{ModbusMaster} használtam a továbbítás egyszerűsítésére.
-    \item \textbf{Átviteli vezérlés:}
-    Az előbb említett adó-vevőnek szüksége van egy úgynevezett DE/RE (Driver Enable/Receiver Enable) vezérlőpinre. 
-    Amit viszont egyszerű megvalósítani az ESP8266-on egy digitális pin segítségével amire itt a D2 lett használva. 
-    Ezzel tudunk később adó és vevő módok között kapcsolni. Küldéshez a pin HIGH (adási mód), ezután a 
-    vételhez, pedig (vételi mód) állapotba kerül, ekkor LOW.
-\end{itemize}
-
 
 \subsection{Megszakító}
 \subsubsection{Hardver}

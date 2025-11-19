@@ -4,6 +4,79 @@ A tervezett rendszer többrétegű, moduláris felépítést követ, ez magában
 fizikai végpontokat, a kommunikációs hálózatot és a felhőalapú vezérlőt is. 
 A rendszer összetevőinek kapcsolatát a \ref{fig:Rendszerarchitektúra}. ábra szemlélteti.
 
+\section{Standardizált rendszer és követelményei}
+
+\subsection{Áttekintés}
+
+A rendszer szabványosítja az adattárolást (Prometheus),
+a vezérlési interfészeket (REST API) és az adatvizualizációt (Grafana),
+ezzel egyszerűsítve az éles termelési környezetbe történő bevezetést (deployment).
+
+\subsection{Tervezési célok és követelmények}
+
+A keretrendszerrel szemben támasztott legfontosabb funkcionális és
+nem-funkcionális követelmények az alábbiak:
+
+\begin{itemize}
+    \item Plug-and-Play modularitás
+    \item Szabványosított mérési API
+    \item Központosított vezérlés
+    \item Konténerizált környezet
+    \item Skálázhatóság
+\end{itemize}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\textwidth, keepaspectratio]{figures/framework.png}
+    \caption{A keretrendszer architektúrája és Kubernetes komponensei}
+    \label{fig:framework_architektura}
+\end{figure}
+
+\subsection{Kubernetes implementáció és komponensek}
+
+A rendszer telepítése és üzemeltetése Kubernetes klaszterben történik.
+Ez a környezet garantálja, hogy a Python vezérlő,
+a végpontok, valamint a Prometheus és Grafana szolgáltatások
+folyamatosan elérhetők legyenek.
+
+\subsubsection{Control Server (Vezérlő)}
+
+A központi logikát tartalmazó Python alapú vezérlő Kubernetes \texttt{Deployment}
+formájában jön létre, amelyet egy \texttt{Service} tesz elérhetővé a klaszteren belül.
+A kommunikáció biztonságoságát a \texttt{Deployment} manifestjében definiált,
+TLS tanúsítványokat tartalmazó \texttt{Secret} biztosítja.
+
+A Flask alapú REST API két fő végpontot kínál:
+\begin{itemize}
+    \item \texttt{/metrics}: Ez prometheus kompatibilis formátumban mutatja
+    az aktuális rendszerállapotot és fogyasztási adatokat.
+    \item Vezérlő végpontok: Itt fogadja a rendszer a beavatkozásra adott parancsokat.
+\end{itemize}
+
+\subsubsection{ESP8266 Szenzor}
+
+Az ESP8266 szenzorok és a rendszer közötti kapcsolatot
+mikroszolgáltatások biztosítják.
+Ezeket a Kubernetes Podokat HTTPS-en keresztül látja a vezérlő,
+ezeknek folyamatosan figyeli a \texttt{/metrics} végpontját.
+
+Az elvárt "Plug-and-Play" működést a Kubernetes annotációi teszik lehetővé.
+Ha egy új eszköz kerül telepítésre  akkor ennek a manifest tartalmazza a
+\texttt{prometheus.io/scrape: "true"} és \texttt{prometheus.io/path: "/metrics"}
+értékeit, a Prometheus, pedig automatikusan,
+új konfiguráció beállítása nélkül is fel fogja venni ezt az eszközt.
+
+\subsubsection{Adattárolás és Vizualizáció}
+
+Az adatbiztonság miatt a Prometheus nem egyszerű Deployment,
+hanem \texttt{StatefulSet}.
+Az adatbázist egy \texttt{PersistentVolumeClaim} segítségével
+tartós tárhelyre menti, így egy újraindítás után is megmaradnak az adatok.
+A scrape config-ot, \texttt{ConfigMap}-ekben lehet definiálni.
+
+A Grafana vizualizációs felület is tartós tárhelyet használ
+a dashboard-ok és felhasználói beállítások mentésére.
+
 \section{Rendszerarchitektúra áttekintése}
 
 Az áramérzékelők (áramváltó bilincsek) mérik az elektromos áramot és az 
@@ -245,6 +318,7 @@ töltőkről, és regisztereket írni. Ezzel áttudtam írni a töltőben a maxi
 A képen Modbus RTU soros kommunikáció összeállítása látszik. Ebben a rendszerben Modbus TCP rendszert használunk.
 Ez igazából csak annyit csinál, hogy TCP keretekbe foglalja a már előbb felsorolt kommunikációt.
 
+\begin{comment}
 \section{Standardizált rendszer}
 
 \subsection{Áttekintés}
@@ -301,3 +375,4 @@ után a felhasználó hozzá fér az irányítópulthoz.
 A skálázhatóságot HorizontalPodAutoscaler biztosítja: ha egy pod CPU- vagy memóriahasználata átlépi a beállított küszöböt, 
 Kubernetes automatikusan podokat indít. Ez a felépítés lehetővé teszi, 
 hogy a cluster pillanatnyi terhelésének megfelelően bővítsük a kapacitást, akár kibőtve külső linux VM-re.
+\end{comment}
