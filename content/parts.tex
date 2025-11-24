@@ -131,6 +131,35 @@ bejövő JSON-t a Prometheus-nak megfelelő formátumra
 
 \section{Kontroll szerver}
 
+\subsection{Szerepe és technológiai háttere}
+
+A Kontroll Szerver a keretrendszer központi döntéshozó egysége.
+Míg az ESP végpontok feladata a mérés és a fizikai beavatkozás,
+addig a szerver felelős az adatkezelésért,
+a korlátok kezeléséért
+és az erőforrás-allokációs algoritmus futtatásáért.
+
+A megvalósításhoz a \textbf{Python} nyelvet
+és a \textbf{Flask} keretrendszert választottam.
+Azért,erre esett a választásom, mert
+sok előre elkészített könyvtár érhető el hozzá,
+és így nem nekem kelett megírnom az egész REST API-t a semmiből.
+Ez, pedig így könnyen integrálható
+a konténerizált (Docker/Kubernetes) környezetbe.
+
+\subsection{Működési logika}
+
+A szerver működése eseményvezérelt,
+a  HTTPS kérések indítják el a vezérlési ciklust.
+A folyamat a következő lépésekből áll:
+
+\begin{enumerate}
+    \item Adatfogadás
+    \item Globális paraméterek olvasása
+    \item Allokáció számítása
+    \item Válasz és vezérlés
+\end{enumerate}
+
 \section{Adatbázis}
 
 A rendszer által generált adatok tárolásához egy Prometheus adatbázist használok. 
@@ -152,13 +181,17 @@ hogy megőrizzem a töltési áramok történetét és ez alapján irányítsam 
 A Flask szerver-ből könnyű továbbítani az adatokat. A megközelítés amit én használtam hogy egy HTTPS /metrics 
 végpont elérhetővé tettem. Amin prometheus által olvasható formában hirdettem az adatokat. 
 Például a Flask alkalmazás tudja továbbítani a mért számokat:
-\begin{lstlisting}
-    current_gauge = prometheus_client.Gauge('ev_charger_current', 'Current draw of EV charger', ['charger']). 
+\begin{lstlisting}[language=Python, caption={Prometheus metrika deklarálása a Flask szerveren}]
+    current_gauge = prometheus_client.Gauge(
+        'ev_charger_current', 
+        'Current draw of EV charger', 
+        ['charger']
+    ) 
 \end{lstlisting}
 
 Ha olvasás érkezik, a szerver frissíti a számokat (egyébként ezt periodikusan is megteszi)
-\begin{lstlisting}
-    current_gauge.labels(charger=id).set(value). 
+\begin{lstlisting}[language=Python, caption={Metrika értékének frissítése címkével}]
+    current_gauge.labels(charger=id).set(value) 
 \end{lstlisting}
 
 A Prometheus-nak előre megkell adni az ip-címeket a konfugorációs filejában
@@ -179,7 +212,7 @@ például a teljes áram kiszámítására, amihez szükségem is volt nekem ren
 A mikrokontroller több metrikát is mér, 
 amit belső változókba elment. Jelenleg teszt célokból ezek, csak kézzel megadott számok.
 
-\begin{lstlisting}[language=HTML]
+\begin{lstlisting}[caption={Prometheus számára formázott szöveges kimenet példa}]
     {
       "# HELP": "esp8266_current Current sensor reading.",
       "# TYPE": "esp8266_current gauge",
@@ -192,22 +225,22 @@ Ez a formátum megengedi, hogy ezt a /metrics endpointon a prometheus folyamatos
 
 A formátumot a következő függvény hozza létre és küldi:
 
-\begin{lstlisting}[language=C]
-    sendMetricsToEndpoint()
-    ...
+\begin{lstlisting}[language=C++, caption={Válaszadás a /metrics végponton (ESP8266)}]
+    sendMetricsToEndpoint();
+    // ... metrikak osszeallitasa ...
     server.send(200, "text/plain", metrics);
 \end{lstlisting}
 
 \subsection{Prometheus lekérdezések kezelése}
 
-\begin{lstlisting}[language=C]
+\begin{lstlisting}[language=C++, caption={Adatgyűjtő függvény hívása}]
     queryPrometheus()
 \end{lstlisting}
 
 Ez a függvény egy HTTP GET kérést küld a Prometheus szervernek, amely a esp8266\_total\_current 
 metrikát kérdezi le és a prometheusValue változóba írja be.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Prometheus lekérdezési URL formátuma}]
     /api/v1/query?query=esp8266_total_current
 \end{lstlisting}
 
@@ -215,11 +248,11 @@ A fentebbi endpointon. \\
 A lekérdezés sikerességét a httpCode ellenőrzésével teszem amennyiben ez 200-at ad vissza az értéket eltárolom 
 és kiírom a soros kommunikáción ellenőrzés céljából.
 
-\begin{lstlisting}[language=C]
+\begin{lstlisting}[language=C++, caption={HTTP válasz fogadása és JSON deserializáció}]
     if (httpCode == HTTP_CODE_OK) {
       String payload = http.getString();
       Serial.println("Response from Prometheus:");
-      Serial.println(payload);  \texttt{Adat JSON-be nyomtatása}
+      Serial.println(payload);
 
       DynamicJsonDocument doc(1024);
       DeserializationError error = deserializeJson(doc, payload);
@@ -235,11 +268,11 @@ A lekérdezés sikerességét a httpCode ellenőrzésével teszem amennyiben ez 
 Mivel a lekérdezés egy JSON formátumú változót ad vissza és ennek feldolgozása nehézkes ezért ezt rögtön szám 
 formátumba alakítom későbbi feldolgozás céljából.
 
-\begin{lstlisting}[language=C]
-    
+\begin{lstlisting}[language=C++, caption={JSON válasz feldolgozása és az érték kinyerése}]
     const char* status = doc["status"];
     if (String(status) == "success") {
       
+      // Az ertek a data -> result -> value tombben talalhato
       const char* valueStr = doc["data"]["result"][0]["value"][1];
       
       prometheusValue = String(valueStr).toFloat();
@@ -269,14 +302,13 @@ bemeneti áramai hogyan jelennek meg Grafanában, és hogyan történik a
 túláram vagy más veszélyes állapotok automatikus vagy manuális kezelése. 
 Minden eszköz a Prometheus metrikákat exportálja a következőképpen:
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Példa az exportált metrikák címkézésére}]
 ev_charger_current_phase_a_amplitude{charger="ev1"} 12.3
 ev_charger_current_phase_b_amplitude{charger="ev1"} 11.8
 ev_charger_current_phase_c_amplitude{charger="ev1"} 12.1
 
 equipment_current_phase_a_amplitude{device="pump1"} 5.4
 ... 
-
 solar_input_current_amplitude 8.7
 \end{lstlisting}
 
@@ -286,9 +318,11 @@ EV töltők áramai amik a
 \$charger változóval vannak jelölve, ez felsorolja az összes ide  tartozó cimke értékét 
 (pl. „ev1”, „ev2”, ...).
 Ezután az idősoros panel: ábrázolja az összegzett értéket három fázison.
-\begin{lstlisting}
+
+\begin{lstlisting}[caption={Lekérdezés az EV töltők áramfelvételére}]
     ev_charger_current{charger="$charger"}
 \end{lstlisting}
+
 Itt ugyanazon a tengelyen láthatóak a három fázis összegzett értékei, 
 különböző színnel és elnevezéssel.
 Az úgynevezett "mérőpanelen" a pillanatnyi fázisáramokat három kis mérő formájában
@@ -304,9 +338,11 @@ A \$device változóban keressük ezeket a metrikákat.
 
 A panel hasonlóan az előző ponthoz jeleníti meg az adatokat, amely a pillanatnyi 
 és max értéket mutatja.
-\begin{lstlisting}
-    max_over_time(equipment_current_phase_a_amplitude{device="\$device"}[1m])
+
+\begin{lstlisting}[caption={Maximum kiválasztása időablakban (segédberendezések)}]
+    max_over_time(equipment_current_phase_a_amplitude{device="$device"}[1m])
 \end{lstlisting}
+
 A maximumot minden fázisra az elmúlt percben mutatja, az idetartozó 
 megfelelő színküszöbökkel.
 Mellette raktam egymás mellé csoportosító oszlopdiagramot a gyors 
@@ -315,7 +351,8 @@ Mellette raktam egymás mellé csoportosító oszlopdiagramot a gyors
 \paragraph{3. Sor}
 Napelem bemeneti áram
 Itt szintén egy idősoros panelt alkalmaztam a megjeleníthetőség érdekében.
-\begin{lstlisting}
+
+\begin{lstlisting}[caption={Napelem bemeneti áram lekérdezése}]
     solar_input_current_amplitude
 \end{lstlisting}
 
