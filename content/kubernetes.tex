@@ -26,15 +26,24 @@ A Kubernetes (K8) viszont egy robusztus, open source platform a konténerek tele
 skálázásának és üzemeltetésének automatizálására hostokon. A Kubernetes új absztrakciókat vezet be:
 
 \begin{itemize}
-    \item \textbf{Pod:} Ez a legkisebb telepíthető egység, amely egy vagy több konténert foglalnak magukba.
+    \item \textbf{Pod:}
+    A Kubernetes legkisebb futtatható egysége,
+    amely egy vagy több konténert foglal magában. \cite{K8sPods}
     
-    \item \textbf{Deployment:} Állapot nélküli alkalmazások kezelésére szolgáló objektumok, amelyek olyan funkciókat kínálnak, mint a gördülő frissítések és a visszaállítás.
+    \item \textbf{Deployment:}
+    Az alkalmazás skálázását és frissítését kezelő vezérlőobjektum. \cite{K8sDeployment}
     
-    \item \textbf{Service:} Végpontokat biztosítanak a podok eléréséhez, segítve a felfedezést és a terheléselosztást.
+    \item \textbf{Service:}
+    Stabil hálózati végpontot és terheléselosztást biztosít
+    a dinamikus Podok számára. \cite{K8sService}
     
-    \item \textbf{ConfigMap és Secret:} Mechanizmus a konfiguráció és az imagek szétválasztására.
+    \item \textbf{ConfigMap és Secret:}
+    A konfigurációs adatok és a bizalmas információk (pl. jelszavak)
+    tárolására szolgáló elemek. \cite{K8sConfigMap} \cite{K8sSecret}
     
-    \item \textbf{PersistentVolumeClaim (PVC):} Absztrakció adattárolásra.
+    \item \textbf{PersistentVolumeClaim (PVC):}
+    Tartós tárhely igénylésére szolgáló absztrakció,
+    amely függetleníti az adattárolást a hardvertől. \cite{K8sPV}
 \end{itemize}
 
 A migráció során ezeket képeztem le docker-ből k8-ba.
