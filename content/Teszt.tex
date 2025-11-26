@@ -1,9 +1,22 @@
 \chapter{Szöveges interfészek a szimulációhoz}
 
+A rendszer működésének igazolásához szükséges egy tesztkörnyezet, 
+ami képes a valós hardver eszközök viselkedését szoftveresen emulálni. 
+A fizikai tesztelés önmagában nem fedné le a szélsőséges terhelési eseteket 
+(például a túlterhelését), és nem tenné lehetővé a hosszú távú, reprodukálható vizsgálatokat.
+
 \section{Cél és áttekintés}
-A rendszer szöveges alapú beállításra és eredménygyűjtésre alkalmas. 
-A cél, hogy a szimuláció \emph{kiegészítő eszközök} (pl.\ curl, CSV-konverzió) nélkül, 
-egyszerű szövegfájlokkal legyen vezérelhető és kiértékelhető.
+A szimulációs alrendszer vezérlése és adatgyűjtése
+kizárólag szöveges interfészeken , gyakorlatban .txt fájlokon alapul.
+
+Ezek biztosítják a kapcsolatot
+a felhasználó és a futó környezet között:
+a bemeneti fájlok definiálják a teszteseteket,
+míg a kimeneti fájlok rögzítik az adatokat.
+
+A cél, hogy a szimuláció kiegészítő eszközök
+(pl. CSV-konverzió) nélkül,
+egyszerű szövegszerkesztővel kiértékelhető legyen.
 
 \noindent Rövid összefoglaló:
 \begin{itemize}
@@ -29,38 +42,75 @@ egyszerű szövegfájlokkal legyen vezérelhető és kiértékelhető.
 
 \section{Bemeneti szövegfájlok}
 
+A vezérlő paramétereket és a szimulált környezetet
+három szöveges állomány határozza meg.
+Ezeket a fájlokat a rendszer
+ciklikusan olvassa, így a módosítások újraindítás nélkül érvényesülnek.
+
 \subsection{\texttt{thresholds.txt} -- küszöbök és maximum megengedhető áram}
-A vezérlő szerver minden ciklusban beolvassa. Kulcs--érték párok, tizedes ponttal:
+
+Ez a fájl tartalmazza a globális határértékeket,
+amiket a vezérlő algoritmusnak be kell tartania.
+A fájl kulcs--érték párokat tartalmaz:
+
 \begin{lstlisting}
-# Küszöbértékek a vezérlő szerverhez
-BREAKER_MAX_TOTAL=65.0    # [A] - Megszakító lekapcsolási áram
-BREAKER_MIN_TOTAL=35.0    # [A] - Megszakító bekapcsolási áram
-ALLOC_MAX_TOTAL=95.0      # [A] - Max áram érték
+# Kuszobertekek a vezerlo szerverhez
+BREAKER_MAX_TOTAL=65.0    # [A] - Megszakito lekapcsolasi aram
+BREAKER_MIN_TOTAL=35.0    # [A] - Megszakito bekapcsolasi aram
+ALLOC_MAX_TOTAL=95.0      # [A] - Max aram ertek
 \end{lstlisting}
+
+\noindent\textbf{Feldolgozás módja:}
+A kontroll Szerver minden vezérlési ciklus elején
+beolvassa ezt a fájlt.
+Ez lehetővé teszi, hogy szimuláció közben is változtathassuk
+a rendelkezésre álló áramkeretet (\texttt{ALLOC\_MAX\_TOTAL}),
+így tesztelve a szabályozó algoritmust.
 
 \noindent Megjegyzések:
 \begin{itemize}
-  \item A \emph{megszakítók} (breakerek) logikája az \emph{aktuálisan mért hatásos} összáramhoz 
-  viszonyít (\texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}).
-  \item A SIM-ekre küldött korlátok (cap) a \emph{nyers igényekből} számítódnak \emph{max-min fair} elv 
-  szerint, az \texttt{ALLOC\_MAX\_TOTAL} keret figyelembevételével.
+    \item A \emph{megszakítók} (breakerek) logikája az \emph{aktuálisan mért hatásos} összáramhoz
+    viszonyít (\texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}).
+    
+    \item A SIM-ekre küldött korlátok (cap) a \emph{nyers igényekből} számítódnak \emph{max-min fair} elv
+    szerint, az \texttt{ALLOC\_MAX\_TOTAL} keret figyelembevételével.
 \end{itemize}
 
 \subsection{\texttt{esp\{x\}\_schedule.txt} -- idősoros bemenet}
-Formátum: időpillanat másodpercben + kívánt áram (A). A menetrend \emph{lépcsős}: a legutóbbi időponthoz 
-tartozó érték érvényes a következő megadásig.
+
+Ezek a fájlok írják le a szimulált fogyasztók (pl. autótöltők) viselkedését,
+vagyis azt, hogy az idő függvényében mekkora áramigénnyel lépnek fel.
+Az adott másodpercben + kívánt áram (A).
+A menetrendben a legutóbbi időponthoz tartozó érték érvényes a következő megadásig.
+
 \begin{lstlisting}
 # seconds  amps
 0         1.0
 30        2.5
 120       0.8
 \end{lstlisting}
-\noindent Irányelvek: tizedes elválasztó pont; tetszőleges szóköz; a sorok idő 
-szerint rendezve mint minden szöveges ki- és bemeneti file-ban.
 
-\section{\texttt{sim\_control.txt} -- futtatási állapot}
-Egyetlen szó: \texttt{RUNNING} vagy \texttt{STOPPED} (Az alapértelmezés \texttt{STOPPED}). 
-A SIM-ek ``virtuális órája'' csak \texttt{RUNNING} állapotban megy.
+\noindent\textbf{Feldolgozás:}
+Ezeket a fájlokat,
+az \textbf{ESP szimulátorok} olvassák be.
+A szimulátor a saját belső virtuális órájához igazodva
+hozza létre a terheléseket.
+
+\subsection{\texttt{sim\_control.txt} -- futtatási állapot}
+
+Ez a fájl a szimuláció globális főkapcsolója.
+Egyetlen szót tartalmazhat: \texttt{RUNNING} vagy \texttt{STOPPED}
+(Az alapértelmezés \texttt{STOPPED}).
+
+\noindent\textbf{Feldolgozás:}
+Ez a fájl  egy szinkronizációs pont az egész rendszer számára.
+\begin{itemize}
+    \item A \textbf{Vezérlő} csak \texttt{RUNNING} állapotban futtatja az allokációs algoritmust
+    és küld beavatkozó parancsokat.
+    \item A \textbf{Szimulátorok} csak \texttt{RUNNING} állapotban léptetik a virtuális idejüket.
+    Ha az állapot \texttt{STOPPED}-ra vált, a rendszer "lefagyasztja" a pillanatnyi állapotot,
+    lehetővé téve a naplók és az állapotok statikus elemzését.
+\end{itemize}
 
 \section{Kimeneti szövegfájl}
 
@@ -86,7 +136,7 @@ breakers=brk1:on,brk2:on
   \item \texttt{sum\_current\_amps} -- mért hatásos összáram (cap után).
   \item \texttt{alloc\_max\_total\_amps} -- allokációs keret (A).
   \item \texttt{max\_total\_amps} / \texttt{min\_total\_amps} -- breaker küszöbök (legacy nevek).
-  \item \texttt{sims} -- \texttt{|} jellel szeparált lista SIM-enként:\\
+  \item \texttt{sims} -- \texttt{|} jellel szeparált lista mérési pontonként (SIM-enként):\\
   \texttt{espX:raw=\dots, effective=\dots, cap=\dots}\\
   ahol \texttt{raw} = menetrendi igény, \texttt{effective} = tényleges áram, \texttt{cap} = küldött maximum.
   \item \texttt{breakers} -- megszakítók állapota \texttt{on}/\texttt{off}, vesszővel elválasztva.
@@ -94,11 +144,18 @@ breakers=brk1:on,brk2:on
 
 \section{Időkezelés és futtatás}
 \begin{itemize}
-  \item \textbf{Virtuális idő:} minden SIM saját menetrendi ideje csak \texttt{RUNNING} állapotban növekszik.
-  \item \textbf{STOPPED} módban a SIM-ek ideje megáll; a vezérlő nem küld új cap-et és 
-  nem kapcsolgat megszakítót, csak mér és naplóz.
-  \item \textbf{Reset (t=0):} a Dev Panel ``Reset sim time (t=0)'' gombja az összes 
-  SIM virtuális idejét nullázza (a panel előbb STOP-ra állít, majd resetel).
+    \item \textbf{RUNNING (Aktív futás):}
+    Ilyenkor a virtuális óra minden ciklusban előrelép.
+    A szimulált végpontok (ESP-k) a $t_{sim}$ időpillanat alapján keresik ki
+    a menetrendjükből (\texttt{schedule.txt}) az aktuális áramigényt.
+    A vezérlő szerver dolgozza fel az adatokat és
+    számolja az allokációt, küldi ki az új korlátokat.
+    
+    \item \textbf{STOPPED (Felfüggesztés):}
+    Ekkor a virtuális idő „befagy” ($t_{sim} = \text{const}$).
+    A szimulátorok megálnak, tartják az utolsó beállított értéket.
+    A vezérlő továbbra is mér és naplózza,
+    de nem történik beavatkozás nem küld új korlátokat és nem kapcsol megszakítót.
 \end{itemize}
 
 \section{Reprodukálhatóság és feldolgozhatóság}
@@ -156,49 +213,99 @@ A backend közvetlenül a \texttt{./data} mappában található fájlokat kezeli
 és hálózaton hívja az esp-t szimuláló konténerek végpontjait. A vezérlő külön, 
 a saját portján (\(8000\)) fut; a Prometheus és Grafana eléréséhez gyorslinkek állnak rendelkezésre.
 
-\section{Fő funkciók és munkamenet}
-\paragraph{Start/Stop.} A \texttt{sim\_control.txt} fájlba írja a panel 
-a \texttt{RUNNING} vagy \texttt{STOPPED} értéket. STOP módban az esp szimulátorok virtuális ideje megáll, 
-a vezérlő nem küld max értékeket és nem kapcsol megszakítókat, csak mérést és naplózást végez.
-\paragraph{Reset (t=0).} A panel a STOP beállítás után meghívja minden esp szimulátor \texttt{/reset\_time} 
-végpontját, a virtuális idejük nulláról indul újra.
-\paragraph{Clear output.txt.} A \texttt{data/output.txt} törlése. A vezérlő a következő ciklusban 
-automatikusan újra létrehozza a fejlécet és folytatja a naplózást.
-\paragraph{Thresholds szerkesztés.} A \texttt{thresholds.txt} beolvasása/írása a panelről: 
-\texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}, \texttt{ALLOC\_MAX\_TOTAL}.
-\paragraph{Menetrend-generátor.} Konstans, fel- és lefutás, lépcső, szinusz és random walk idősorok képezhetők 
-a \texttt{esp\{x\}\_schedule.txt} fájlokba (formátum: \texttt{seconds\ \ \ amps}). 
-A generált tartalom előnézetben ellenőrizhető.
-\paragraph{Raw editor \& Letöltés.} Tetszőleges bemeneti fájl közvetlen szerkeszthető; 
-az \texttt{output.txt} csak olvasható. Minden be- és a kimenet letölthető megőrzéshez.
+\section{Felhasználói felület és funkciók}
 
-\section{Backend API (elérések)}
-\begin{center}
-\begin{tabular}{ll}
+A grafikus felület két fő funkcionális egységre tagolódik:
+a globális vezérlőkre (Simulation Control) és a tesztesetekre (Scenarios).
+
+\subsection{Simulation Control (Vezérlőpult)}
+
+Itt lehet a szimuláció globális állapotát menedzselni.
+
+\begin{itemize}
+    \item \textbf{Start/Stop:}
+    A gombok a \texttt{sim\_control.txt} fájl írásával vezérlik a futtatást.
+    \texttt{STOP} módban a szimulátorok virtuális ideje megáll,
+    a vezérlő nem küld új parancsokat.
+    
+    \item \textbf{Reset (t=0):}
+    A funkció leállítja a futást,
+    és üzenettel nullázza minden szimulátor belső óráját,
+    így a teszt biztosan nulláról indul.
+    
+    \item \textbf{Clear output:}
+    Törli a naplófájl tartalmát,
+    hogy a következő futás adatait ne keveredjenek a korábbiakkal.
+    
+    \item \textbf{Élő monitorozás:}
+    A felület valós időben megjeleníti az aktuális összáramot és a rendszer státuszát.
+\end{itemize}
+
+\subsection{Scenarios (Szcenárió-kezelő modul)}
+
+Lehetővé teszi a komplex tesztesetek egységes kezelését.
+A modul három fülre bomlik:
+
+\subsubsection{1. Presets (Előre definiált tesztek)}
+
+A gyakran használt tesztesetek
+(pl. statikus túlterhelés, hiszterézis-vizsgálat, dinamikus átrendeződés)
+beépített sablonként érhetők el.
+
+A felhasználó egyetlen kattintással betöltheti és elindíthatja ezeket.
+Ez a funkció ("Auto Test Runner") gyorsítja a demonstrációt.
+
+\subsubsection{2. Builder (Szerkesztő és Generátor)}
+
+Ez a felület szolgál az egyedi tesztek összeállítására:
+
+\begin{itemize}
+    \item \textbf{Menetrend-generátor:}
+    Segítségével grafikusan állíthatóak be a terhelési görbék
+    (konstans, rámpa, lépcső, szinusz, random walk).
+    Ezek azonnal megjelennek a szerkesztőablakban.
+    
+    \item \textbf{Thresholds beállítás:}
+    A globális korlátok (\texttt{ALLOC\_MAX}, \texttt{BREAKER\_MAX})
+    közvetlen szerkesztése.
+    
+    \item \textbf{Azonnali futtatás:}
+    A "Run now" gombbal a beállított paraméterek mentésre kerülnek a fájlokba,
+    és a szimuláció azonnal elindul az új értékekkel.
+\end{itemize}
+
+\subsubsection{3. Files (Fájlkezelés)}
+
+A panel lehetőséget biztosít a teljes konfiguráció
+(menetrendek + határértékek + vezérlési opciók)
+JSON formátumú mentésére és visszatöltésére.
+
+A "Saved Scenarios" listából a korábban elmentett tesztek
+bármikor újra előhívhatók,
+a "Downloads" szekció pedig lehetővé teszi a nyers bemeneti
+és kimeneti (\texttt{output.txt}) fájlok letöltését archiválás céljából.
+
+\section{Backend API interfész}
+
+A Dev Panel backendje az alábbi REST végpontokon keresztül érhető el,
+amelyeket a frontend vagy külső automatizációs szkriptek is használhatnak:
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|l|}
 \hline
-\textbf{Végpont} & \textbf{Funkció} \\
-\hline
-\texttt{GET\ /api/read?name=...} & Fájl beolvasása \\
-\texttt{POST\ /api/write} & Fájl írása \\
-\texttt{GET\ /api/download?name=...} & Közvetlen letöltés \\
-\texttt{GET\ /api/sim\_state} & Globális állapot lekérdezése \\
-\texttt{POST\ /api/sim\_state} & RUNNING/STOPPED beállítása \\
-\texttt{POST\ /api/clear\_output} & \texttt{output.txt} törlése \\
-\texttt{POST\ /api/reset\_sim\_time} & Minden szimulátor időnullázása \\
-\hline
+\textbf{Végpont} & \textbf{Funkció} \\ \hline
+\texttt{GET /api/sim\_state} & A globális állapot (RUNNING/STOPPED) lekérdezése \\ \hline
+\texttt{POST /api/sim\_state} & A futtatási állapot módosítása \\ \hline
+\texttt{POST /api/reset\_sim\_time} & Minden szimulátor órájának nullázása \\ \hline
+\texttt{POST /api/clear\_output} & A naplófájl törlése \\ \hline
+\texttt{POST /api/run\_scenario} & Teljes teszteset (JSON) alkalmazása és indítása \\ \hline
+\texttt{POST /api/save\_scenario\_json} & Aktuális beállítások mentése a szerverre \\ \hline
+\texttt{GET /api/read /api/write} & Nyers fájlműveletek a \texttt{/data} mappában \\ \hline
 \end{tabular}
-\end{center}
-
-\section{Biztonsági és korlátok}
-A panel \emph{belső} használatra készült. Nincs többfelhasználós jogosultság- és CSRF-kezelés; 
-éles környezetben ezeket pótolni szükséges. A fájlműveletek engedélyezett listához kötöttek, 
-a végpontok nem tesznek lehetővé tetszőleges fájlhozzáférést.
-
-\section{Kiterjeszthetőség}
-A panel könnyen bővíthető új be- és kimenetekkel: pl.\ súlyozott fair-elosztás bemenete (\texttt{weights.txt}), 
-előre definiált menetrend-sablonok, vagy beépített grafikon a \texttt{output.txt} vizualizálására. 
-A funkcionalitás változtatása különösen egyszerű, mivel az állapot \emph{szöveges fájlokban} 
-van deklarálva.
+\caption{A Dev Panel legfontosabb API végpontjai}
+\label{tab:devpanel-api}
+\end{table}
 
 \begin{figure}[H]
     \centering
@@ -206,134 +313,3 @@ van deklarálva.
     \caption{Devpanel}
     \label{fig:devpanel}
 \end{figure}
-
-% =====================================================================
-
-\section{Dev Panel módosítások}
-
-\subsection{Motiváció és cél}
-A fejlesztői panelt a készítésnek ebben a fázisában úgy bővítettem, hogy a tesztesetek egy 
-kattintással reprodukálhatóak legyenek, a kézi teszt generátor pedig ugyanazon a felületen, 
-azonnali futtatással történjen és opciót adjon a kimentésre . A fő cél: 
-\emph{egységes teszteset kezelés} (presetek, és könnyen generálható egyedi scenariók), 
-\emph{automatizált tesztelés}, és \emph{idősoros megfigyelés} egy nézetben.
-
-\subsection{Fő fejlesztések}
-\begin{itemize}
-  \item \textbf{Egységesítettem a \emph{Scenarios} kártyát} három füllel: \emph{Presets}, 
-  \emph{Builder}, \emph{Files}.
-  \item \textbf{Auto Test Runner}: beépített demók (presetek) egy kattintással futtathatóak, 
-  illetve betölthető és kimenthető JSON-ba egy teljes scenarió.
-  \item \textbf{Összevont szerkesztés}: a menetrend-generátor és a nyers szövegszerkesztő panelt 
-  egységesítettem (\emph{Builder}).
-  \item \textbf{Scenarió-könyvtár}: megvalósítottam a teljes tesztet magába foglaló
-  JSON mentését sajátgépre vagy szerverre. 
-  (\texttt{/data/scenarios/}).
-  \item \textbf{Atomikus írás és állapotkezelés}: bemeneti fájlok biztonságos felülírása, 
-  \texttt{sim\_control.txt} kezelés, opcionális \emph{reset} és naplótörlés.
-  \item \textbf{Élő grafikon és gyorshivatkozások}: valós idejű összáram és 
-  szimulátoronkénti külön görbe, 
-  közvetlen linkek is itt találhatóak meg a \texttt{/status}, 
-  \texttt{/metrics}, Prometheus, Grafana nézetekhez.
-\end{itemize}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{figures/devpanel_v2.png}
-    \caption{Devpanel v2}
-    \label{fig:devpanel v2}
-\end{figure}
-
-\subsection{Felépítés és API változások}
-A Dev Panel backend része új végpontokkal bővült, ezek:
-\begin{itemize}
-  \item \verb|POST /api/run_scenario| \;-\; teljes scenarió alkalmazása 
-  (küszöbök + menetrendek + vezérlési opciók).
-  \item \verb|GET/POST /api/read|, \verb|/api/write| \;-\; bemeneti állományok (txt) kezelése.
-  \item \verb|POST /api/clear_output|, \verb|POST /api/reset_sim_time|, 
-  \verb|POST /api/sim_state|.
-  \item \verb|GET /api/list_scenarios|, \verb|GET /api/read_scenario|, 
-  \verb|GET /api/download_scenario|, \verb|POST /api/save_scenario_json|, 
-  \verb|DELETE /api/delete_scenario|.
-\end{itemize}
-
-\noindent Az általam használt JSON séma a tesztek definiálására:
-\begin{lstlisting}
-{
-  "name": "Demo",
-  "thresholds": {
-    "BREAKER_MAX_TOTAL": 12,
-    "BREAKER_MIN_TOTAL": 2,
-    "ALLOC_MAX_TOTAL": 9
-  },
-  "schedules": {
-    "esp1": [[0, 50], [60, 10]],
-    "esp2": [[0, 50], [60, 10]],
-    "esp3": [[0, 50], [60, 100]]
-  },
-  "control": {
-    "reset_time": true,
-    "clear_output": true,
-    "start_after_load": true
-  }
-}
-\end{lstlisting}
-
-A \verb|/api/run_scenario| hívás menete:
-\begin{enumerate}
-  \item \texttt{sim\_control.txt} \(\rightarrow\) \texttt{STOPPED}.
-  \item Opcionálisan lehet törölni az \texttt{output.txt} tartalmát, szimulátor időket resetelni \emph{reset}.
-  \item \texttt{thresholds.txt}, \texttt{esp\{1..3\}\_schedule.txt} újra írása.
-  \item Végállapot a futattás után: \texttt{RUNNING} vagy \texttt{STOPPED} (beállítástól függően).
-\end{enumerate}
-
-\subsection{UI szervezés (\emph{Scenarios} kártya)}
-\paragraph{Presets.} Előre definiált demókat tartalmaz (smoke test, under budget, fair split 3/3/3, 
-dinamikus újraelosztás, hiszterézis, STOPPED invariánsok) Ezek futtathatóak az említett opciókkal: 
-\emph{Reset t=0}, \emph{Clear output.txt}, \emph{Start after load}. Külső JSON is betölthető/futtatható.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{figures/devpanel presets.png}
-    \caption{Devpanel Presets fül}
-    \label{fig:devpanel presets}
-\end{figure}
-
-\paragraph{Builder.} Max értékek (\texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}, 
-\texttt{ALLOC\_MAX\_TOTAL}) és vezérlési opciók mellett szerkesztőablakok a
-menetrendekhez. Különböző menetrend típusok választhatóak 
-(állandó, rámpa, lépcső, szinusz, random walk) \emph{Insert/Overwrite} móddal.
-Kettő opció van ezután:
-\begin{itemize}
-  \item \emph{Apply to files}: csak fájlok írása (nem indul a szimuláció).
-  \item \emph{Run now}: fájlok írása és azonnali futtatás az opciók szerint.
-\end{itemize}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{figures/devpanel builder.png}
-    \caption{Devpanel Builder fül}
-    \label{fig:devpanel builder}
-\end{figure}
-
-\paragraph{Files.} Gyors letöltések a txt-állományokhoz, illetve a szerveren tárolt 
-scenariók listája (futtatás, letöltés, betöltés a Builderbe, törlés).
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{figures/devpanel_files.png}
-    \caption{Devpanel Files fül}
-    \label{fig:devpanel}
-\end{figure}
-
-\subsection{Használati munkafolyamat}
-A kipróbáláshoz javasolt lépések folyamata:
-\begin{enumerate}
-  \item \emph{Presets}: kiválasztás \(\rightarrow\) opciók 
-  (\emph{Reset/Clear/Start}) \(\rightarrow\) \emph{Run preset}.
-  \item \emph{Builder}: menetrend generálása/szerkesztése 
-  \(\rightarrow\) \emph{Run now}.
-  \item \emph{Export/Save}: scenarió JSON letöltése vagy mentése saját gépre vagy a szerverre 
-  későbbi felhasználás céljából.
-  \item \emph{Files}: \texttt{output.txt} letöltése eredmények tárolásához.
-\end{enumerate}

@@ -7,10 +7,6 @@
 A dolgozatban bemutatott keretrendszer nem csak egy statikus 
 eszköz, hanem egy aktív beleszól a rendszer elemek működésébe
 Ezentúl vannak egyéb fizikai eszközök amik a felügyeleti rendszertől függetlenül üzemelnek. 
-Míg a dolgozat végén található tesztek 
-a rendszer \emph{funkcionális} helyességét igazolják, 
-itt a rendszer időbeli viselkedését, 
-azaz a késleltetését vizsgáltam.
 
 Energetikai rendszerek felügyeleténél a reakcióidő kritikus tényező, 
 mert egy zárlat esetén rövid idő alatt nagyon nagy energiák szabadulnak fel. 
@@ -18,14 +14,10 @@ A keretrendszer célja, hogy a szoftveres energia
 allokációval a teljes keretet(\texttt{ALLOC\_MAX\_TOTAL}) úgy ossza fel,
 hogy megelőzze a fizikai védelmi eszközök
 (megszakítók)
-leoldását. A rendszer gyakorlatilag egy 
-"versenyt fut" az idővel: a szoftveres vezérlőhuroknak gyorsabban 
-kell észlelnie és kezelnie a túlterhelést, mint ami a fizikai 
+leoldását. A rendszer versenyt fut az idővel: a szoftvernek gyorsabban 
+kell beavatkoznia, mint ami a fizikai 
 megszakító védelmén van beállítva leoldási időnek.
-
-Ha a késleltetés túl nagy, a rendszer -- bár 
-funkcionálisan helyesen működne --  mégis kudarcot fog vallani, 
-mert a túlterhelés hatására a megszakítók leoldanak, mielőtt 
+Ha a késleltetés túl nagy, a megszakítók leoldanak, mielőtt 
 a szoftveres korlátozás érvénybe léphetne. 
 
 \section{A vezérlés komponenseinek késleltetése }
@@ -154,25 +146,28 @@ Tegyük fel, hogy:
 \end{itemize}
 
 Ebben az esetben az esetben megfelelő a kettő késleltetés távolsága, hogy ne történjen véletlen leoldás.
-
-\section{Következtetések}
-
-A keretrendszer sebességét nem a \texttt{max--min fair} 
-algoritmus bonyolultsága, hanem a \texttt{pull}-alapú 
-adatgyűjtési architektúra késleltetése határozza meg főként. 
-Ez a szoftveres késleltetés (\(T_{total}\)) a rendszer egyik 
-fő paramétere.
-
-A fizikai védelmi beállításokat a megszakító fizikai felületén 
-kötelezően ennek a szoftveres késleltetésnek a figyelembevételével 
-kell konfigurálni.
-A két védelmi szint között elegendő 
-headroom-ot kell hagyni, hogy a szoftveres allokációnak 
-legyen ideje reagálni a terhelésváltozásokra, mielőtt a fizikai 
-védelem szükségtelenül megszakítaná a szolgáltatást, a fizikai megszakítónak csak a
-hibák kivédésére szabad működnie. 
-A rendszer finomhangolásánál viszont fontos figyelembe venni az egyensúlyt
-a gyors adatgyűjtés, ezáltal gyors védelmi beállítás és a magas hálózati terhelés
-között.
-
-
+\begin{comment}
+    
+    \section{Következtetések}
+    
+    A keretrendszer sebességét nem a \texttt{max--min fair} 
+    algoritmus bonyolultsága, hanem a \texttt{pull}-alapú 
+    adatgyűjtési architektúra késleltetése határozza meg főként. 
+    Ez a szoftveres késleltetés (\(T_{total}\)) a rendszer egyik 
+    fő paramétere.
+    
+    A fizikai védelmi beállításokat a megszakító fizikai felületén 
+    kötelezően ennek a szoftveres késleltetésnek a figyelembevételével 
+    kell konfigurálni.
+    A két védelmi szint között elegendő 
+    headroom-ot kell hagyni, hogy a szoftveres allokációnak 
+    legyen ideje reagálni a terhelésváltozásokra, mielőtt a fizikai 
+    védelem szükségtelenül megszakítaná a szolgáltatást, a fizikai megszakítónak csak a
+    hibák kivédésére szabad működnie. 
+    A rendszer finomhangolásánál viszont fontos figyelembe venni az egyensúlyt
+    a gyors adatgyűjtés, ezáltal gyors védelmi beállítás és a magas hálózati terhelés
+    között.
+    
+    
+    
+\end{comment}
