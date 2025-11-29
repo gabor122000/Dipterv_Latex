@@ -1,9 +1,18 @@
 \chapter{Rendszertesztek és bemutató szcenáriók}
 
-\section{Tesztek megvalósítása}
+\section{Tesztelés módszertan}
+
+\subsection{Tesztek megvalósítása}
 A cél itt annak igazolása volt, hogy a rendszer komponensei megfelelően működnek. 
 A vizsgálat során \emph{idősoros} bemeneti és kimeneti fájlt (\texttt{thresholds.txt}) használtam. 
 Ebben az esetben a kontrollciklus periódusa \(T_c=3\,\mathrm{s}\). \newline
+
+Fontos hangsúlyozni, hogy a vizsgálatok során nem valós fizikai eszközökön (töltőkön) 
+mértem áramot, hanem a szimulátorok által generált és a vezérlő-monitorozó rendszeren 
+keresztül, mért értékeket elemeztem. 
+Ez a megközelítés biztosította, hogy a vezérlés a valósághoz hű, 
+de biztonságos és reprodukálható környezetben vizsgázhasson, 
+ahol a "tényleges" érték a rendszer által érzékelt állapotot jelenti.
 
 \noindent \textbf{Mérőszámok és ellenőrzési pontok:}
 \begin{itemize}
@@ -26,30 +35,7 @@ Ebben az esetben a kontrollciklus periódusa \(T_c=3\,\mathrm{s}\). \newline
 \noindent Ezeket \texttt{output.txt} idősoros naplóban ellenőriztem, itt volt a legegyszerűbb, 
 mert itt egy sor egy ciklus.
 
-\section{Bemenetek és állapot}
-\begin{itemize}
-    \item \texttt{thresholds.txt}:
-    \begin{itemize}
-        \item \texttt{BREAKER\_MAX\_TOTAL}
-        \item \texttt{BREAKER\_MIN\_TOTAL}
-        \item \texttt{ALLOC\_MAX\_TOTAL}
-    \end{itemize}
-    Ezek fentebb említett módon kerülnek használatra.
-    \item idő - áramerősség párokat tartalmazzó menetrendek minden végponthoz:
-    \begin{itemize}
-        \item \texttt{esp1\_schedule.txt}
-        \item \texttt{esp2\_schedule.txt}
-        \item \texttt{esp3\_schedule.txt}
-    \end{itemize}
-    \item \texttt{sim\_control.txt}:
-    \begin{itemize}
-        \item RUNNING a szimulációhoz használt merők belső órája megy
-        \item STOPPED a szimulációhoz használt mérők belső órája megáll
-    \end{itemize}
-    alapértelmezés: STOPPED.
-\end{itemize}
-
-\section{Várt viselkedés}
+\subsection{Várt viselkedés}
 \begin{enumerate}
   \item Ha \(\sum_i d_i \le \texttt{ALLOC\_MAX\_TOTAL}\)\,: \emph{nincs korlát}, 
   ezért \(\mathrm{effective}_i=d_i\) minden mérőre és az összáram egyszerűen \(\sum_i d_i\).
@@ -292,7 +278,7 @@ statikus túlterhelést tud kezelni, hanem képes valós időben
 reagálni a fogyasztói igények drasztikus változására is. 
 Ez a forgatókönyv azt modellezi, ahogy egyes fogyasztók igénye 
 lecsökken, a felszabaduló kapacitást pedig a rendszer automatikusan 
-és a "max-min fair" elvnek megfelelően újraosztja egy másik, 
+és a "max-min fair" elvnek megfelelően (lásd \ref{chap:max-min-fair}. fejezet) újraosztja egy másik, 
 nagy igénnyel jelentkező fogyasztóhoz, miközben az összáram végig 
 a globális kereten belül marad. \newline
 
@@ -566,3 +552,61 @@ A tesztek ellenőrzik, hogy (i) az allokáció a max-min fair elvet követi-e, (
 a megszakító hiszterézise a küszöbértékekhez képest működik-e, (iii) a \texttt{STOPPED}
 állapot működik-e, és (iv) a rendszer minden ciklusban önmagát leíró idősoros naplót állít elő.
 Ezek együttesen biztosítják az elvárt funkcio nális helyességet és transzparens viselkedést.
+
+\subsection{Magas rendelkezésre állás (High Availability) tesztje}
+
+Ez a vizsgálat nem az energetikai szabályozást, hanem az infrastruktúra robusztusságát ellenőrzi. A cél annak demonstrálása, hogy a Kubernetes környezet képes automatikusan kezelni a kritikus komponensek (pl. a Kontroll Szerver) meghibásodását, és emberi beavatkozás nélkül helyreállítani a szolgáltatást.
+
+\textbf{Tesztkonfiguráció:}
+A teszt során a Kontroll Szerver \texttt{Deployment}-je 2 replikával fut. 
+A rendszer \texttt{RUNNING} állapotban van, folyamatos mérés és szabályozás zajlik.
+
+\textbf{Lépések:}
+\begin{enumerate}
+    \item \textbf{Alapállapot ellenőrzése:} A \texttt{kubectl get pods} paranccsal ellenőrzöm, hogy a vezérlő fut.
+    \item \textbf{Hiba szimulálása:} A \texttt{kubectl delete pod <pod-id>} paranccsal 
+    szándékosan lelövöm az aktív vezérlő konténert, szimulálva egy szoftveres összeomlást.
+    \item \textbf{Megfigyelés:} A devpanelen és a \texttt{kubectl get pods -w} kimeneten figyelem az újraindulást.
+\end{enumerate}
+
+\textbf{Eredmények:}
+A hiba pillanatában a kapcsolat az ESP eszközökkel rövid időre megszakadt. 
+A Kubernetes azonban azonnal észleli, hogy a futó podok száma (0) eltér a kívánt állapottól.
+A rendszer automatikusan új konténert indít. 
+Mivel a konfigurációt (\texttt{thresholds.txt}) és az állapotot PVC-k vagy ConfigMap-ek tárolják, 
+az új példány az előzővel azonos beállításokkal lép működésbe.
+
+\textbf{Konklúzió:}
+A teszt sikeresen igazolja, hogy a konténerizált környezet \emph{öngyógyító}. 
+A kiesési idő nagyságrendileg összemérhető a rendszer ciklusidejével, így a felügyelet folytonossága a gyakorlatban nem sérül.
+
+\section{Összegzés és a vizsgálatok értékelése}
+
+A fejezetben bemutatott tesztesetek célja a rendszer működésének validálása volt
+különböző terhelési viszonyok és üzemállapotok mellett.
+Ezek a forgatókönyvek lefedik a legfontosabb működési módokat,
+amik a preset-ek között definiáltunk.
+
+A kimenetek elemzése alapján megállapítható,
+hogy a rendszer minden esetben az elvárásoknak megfelelően működött:
+
+\begin{itemize}
+    \item \textbf{Allokációs pontosság:}
+    Túlterhelés esetén (10.4.3. és 10.4.4. eset) a vezérlő sikeresen tartotta
+    a globális áramkeretet (\texttt{ALLOC\_MAX}),
+    és igazságos elosztást eredményezett.
+    
+    \item \textbf{Védelmi logika:}
+    A megszakító-vezérlés (10.4.5. eset) pontosan követte a beállításokat,
+    megakadályozva a fizikai határérték átlépését.
+    
+    \item \textbf{Dinamikus viselkedés:}
+    A rendszer a terhelés hirtelen változásaira (10.4.4. eset)
+    a következő vezérlési ciklusban azonnal reagált,
+    bizonyítva a valós idejű beavatkozás képességét.
+    
+    \item \textbf{Stabilitás:}
+    A \texttt{STOPPED} állapot (10.4.6. eset) helyes működése igazolta,
+    hogy a rendszer állapota bármikor befagyasztható és elemezhető
+    anélkül, hogy a vezérlés elromlana.
+\end{itemize}

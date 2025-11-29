@@ -158,6 +158,25 @@ breakers=brk1:on,brk2:on
     de nem történik beavatkozás nem küld új korlátokat és nem kapcsol megszakítót.
 \end{itemize}
 
+\subsection{A STOPPED állapot szerepe a vezérlésben}
+
+A rendszerben bevezetett \texttt{STOPPED} állapot a futás szüneteltetését szolgálja és
+a szimulációs környezet konzisztenciáját segíti.
+Bevezetésének kettő oka volt:
+
+\begin{itemize}
+    \item \textbf{Állapot-befagyasztás:}
+    Mivel a vezérlő felfüggeszti az aktív beavatkozást,
+    a rendszer pillanatnyi belső állapotát lehet ellenőrizni statikus körülmények között.
+    
+    \item \textbf{Determinisztikus újraindítás:}
+    Ez az állapot a kiindulópontja a \texttt{RESET} műveletnek is,
+    biztosítva, hogy minden komponens pontosan ugyanabból a $t=0$ időpillanatból induljon.
+\end{itemize}
+
+Ez a mechanizmus garantálja, hogy a tesztelés során
+a vezérlő szoftver viselkedése determinisztikus és bármikor reprodukálható legyen.
+
 \section{Reprodukálhatóság és feldolgozhatóság}
 A bemenetek (küszöbök, menetrendek, futtatási állapot) verziózhatók és mellékelhetők. 
 A kimeneti \texttt{output.txt} önleíró; minden rekord tartalmazza az adott ciklus lényeges paramétereit. 
