@@ -82,6 +82,12 @@ Ezek a fájlok írják le a szimulált fogyasztók (pl. autótöltők) viselked�
 vagyis azt, hogy az idő függvényében mekkora áramigénnyel lépnek fel.
 Az adott másodpercben + kívánt áram (A).
 A menetrendben a legutóbbi időponthoz tartozó érték érvényes a következő megadásig.
+Itt fontos megemlíteni, a szimulációs vizsgálatok hatékonysága érdekében a 
+környezetben bevezetésre került a \textit{virtuális idő} fogalma. 
+Ez a mechanizmus egy szoftveres óra segítségével 
+leválasztja a lokális vezérlőket a valós fizikai időtől, 
+így lehetővé teszi a hosszú távú folyamatok (pl. egész napos terhelési ciklusok) 
+nagyságrendekkel gyorsabb, de adatkonzisztens lefuttatását. A virtuális órákat a kontrol szerver szinkronizálja.
 
 \begin{lstlisting}
 # seconds  amps
@@ -265,7 +271,7 @@ Itt lehet a szimuláció globális állapotát menedzselni.
 Lehetővé teszi a komplex tesztesetek egységes kezelését.
 A modul három fülre bomlik:
 
-\subsubsection{1. Presets (Előre definiált tesztek)}
+\subsubsection{Presets (Előre definiált tesztek)}
 
 A gyakran használt tesztesetek
 (pl. statikus túlterhelés, hiszterézis-vizsgálat, dinamikus átrendeződés)
@@ -274,7 +280,7 @@ beépített sablonként érhetők el.
 A felhasználó egyetlen kattintással betöltheti és elindíthatja ezeket.
 Ez a funkció ("Auto Test Runner") gyorsítja a demonstrációt.
 
-\subsubsection{2. Builder (Szerkesztő és Generátor)}
+\subsubsection{Builder (Szerkesztő és Generátor)}
 
 Ez a felület szolgál az egyedi tesztek összeállítására:
 
@@ -293,7 +299,7 @@ Ez a felület szolgál az egyedi tesztek összeállítására:
     és a szimuláció azonnal elindul az új értékekkel.
 \end{itemize}
 
-\subsubsection{3. Files (Fájlkezelés)}
+\subsubsection{Files (Fájlkezelés)}
 
 A panel lehetőséget biztosít a teljes konfiguráció
 (menetrendek + határértékek + vezérlési opciók)

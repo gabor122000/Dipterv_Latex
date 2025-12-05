@@ -547,12 +547,6 @@ breakers=brk1:on,brk2:on
     \label{fig:stop_3}
 \end{figure}
 
-\section*{Összegzés}
-A tesztek ellenőrzik, hogy (i) az allokáció a max-min fair elvet követi-e, (ii) 
-a megszakító hiszterézise a küszöbértékekhez képest működik-e, (iii) a \texttt{STOPPED}
-állapot működik-e, és (iv) a rendszer minden ciklusban önmagát leíró idősoros naplót állít elő.
-Ezek együttesen biztosítják az elvárt funkcio nális helyességet és transzparens viselkedést.
-
 \subsection{Magas rendelkezésre állás (High Availability) tesztje}
 
 Ez a vizsgálat nem az energetikai szabályozást, hanem az infrastruktúra robusztusságát ellenőrzi. A cél annak demonstrálása, hogy a Kubernetes környezet képes automatikusan kezelni a kritikus komponensek (pl. a Kontroll Szerver) meghibásodását, és emberi beavatkozás nélkül helyreállítani a szolgáltatást.
