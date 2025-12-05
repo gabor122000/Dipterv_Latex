@@ -25,14 +25,14 @@ nem-funkcionális követelmények az alábbiak:
     \item Skálázhatóság
 \end{itemize}
 
-\begin{figure}[!ht]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth, keepaspectratio]{figures/framework.png}
     \caption{A keretrendszer architektúrája és Kubernetes komponensei}
     \label{fig:framework_architektura}
 \end{figure}
 
-\subsection{Kubernetes implementáció és komponensek}
+\subsection{Komponensek}
 
 A rendszer telepítése és üzemeltetése Kubernetes klaszterben történik.
 Ez a környezet garantálja, hogy a Python vezérlő,
@@ -127,14 +127,15 @@ következőket tartalmazza:
     \item Docker containerek: 
     A Flask szerver és a Prometheus  Docker-tárolókban fut, 
     így megvalósul a mikroszolgáltatás alapú összeállítás, ami akár helyi szerveren,
-    akár modern felhő natív rendszeren jól fut. A Docker biztosítja, hogy az összes szükséges függőséget 
-    (Python-könyvtárak stb.) így megkönnyítve az üzemeltetés dolgát, 
+    akár modern felhő natív rendszeren jól fut. A Docker biztosítja, hogy a konténer taralmazza az 
+    összes szükséges függőséget 
+    (Python-könyvtárak stb.), így megkönnyítve az üzemeltetés dolgát, 
     és lehetővé teszi a rendszer megbízható méretezését vagy replikálását.
 \end{itemize}
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=1\textwidth]{figures/szakdoga.jpg}
+    \includegraphics[width=1\textwidth]{figures/rrendszer.jpg}
     \caption{Rendszerarchitektúra}
     \label{fig:Rendszerarchitektúra}
 \end{figure}
@@ -256,7 +257,7 @@ teljesítményt el tud diszipálni folyamatos terhelés melett is.
 A rendszer kommunikációs topológiáját és az adatfolyam irányait a \ref{fig:Rendszerarchitektúra}. ábra szemlélteti. 
 Ezután ennek a megvalósításával folytatom a két fő protokoll, a HTTP és a Modbus mentén.
 
-\subsection{ESP8266 és Szerver között (Wi-Fi és REST API)}
+\subsection{Helyivezérlő és Szerver között (Wi-Fi)}
 
 A kommunikációhoz az ESP8266 végpontok Wi-Fi-t használnak a mérések továbbítására a vezérlő Flask szerverre. 
 Indításkor minden ESP8266 csatlakozik a konfigurált 
@@ -299,7 +300,7 @@ amit viszont könnyű megadni és frissíteni.
 Kezdetben titkosítatlan HTTP-t használtam, viszont ezt később frissítettem a valódi telepítési környezethez hasonló 
 HTTPS-el. Szerencsére az ESP8266 képes kezelni a TLS-t.
 
-\subsection{Modbus}
+\subsection{Energetikai eszköz és helyivezrlő között (Modbus)}
 
 A vezérlő oldalon a szerver a Modbus protokollt használja az EV-töltőkkel való kommunikációhoz. 
 A Modbus egy széles körben elterjedt protokoll az ipari rendszerekben elektronikus eszközök csatlakoztatására. 

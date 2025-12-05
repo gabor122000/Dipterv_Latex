@@ -13,5 +13,14 @@
         "**/**.out": true,
         "**/**.thm": true,
         "**/**.toc": true
-    }
+    },
+    "spellright.language": [
+        "en",
+        "hu"
+    ],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext"
+    ]
 }

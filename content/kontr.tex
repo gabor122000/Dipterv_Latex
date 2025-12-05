@@ -1,0 +1,325 @@
+\chapter{Központi vezérlő felépítése}
+
+\section{Flask alapú vezérlő}
+
+A központi vezérlő a rendszer "agya", amely a Kubernetes cluster-en belül, 
+konténerizált környezetben fut. A szoftver fejlesztéséhez a \textbf{Python} programozási nyelvet és 
+a \textbf{Flask} keretrendszert választottam, mivel ezek rugalmas és gyors fejlesztést tesznek lehetővé, 
+valamint kiváló támogatást nyújtanak a RESTful API-k megvalósításához.
+
+A vezérlő architektúrája három fő rétegre bontható:
+\begin{enumerate}
+    \item \textbf{Kommunikációs réteg:} A bejövő HTTP kéréseket (mérésadatok) és a 
+    kimenő válaszokat (aktuális áramlimitek) kezeli. 
+    Az Ingress Gateway felelős a forgalom megfelelő pod-hoz való irányításáért.
+    \item \textbf{Adatkezelési réteg:} A beérkező mérési adatokat a rendszer a Prometheus idősoros 
+    adatbázisba továbbítja, illetve onnan olvassa ki a historikus adatokat a döntéshozatalhoz.
+    \item \textbf{Logika réteg:} Itt történik a tényleges számítás és döntéshozatal.
+\end{enumerate}
+
+Ez az  alfejezet kizárólag a szoftverkomponensek technikai felépítését és az adatkapcsolatokat mutatja be. 
+A vezérlő tényleges döntési mechanizmusát, az alkalmazott \textit{water-filling} algoritmust és 
+az allokációs stratégiákat részletesen a következő alfejezetben fejtem ki. 
+A rendszer valós idejű működésének korlátait, különös tekintettel a hálózati késleltetésre (latency) 
+és a szabályozási köridőre, az ezt követő alfejezet tárgyalja.
+
+\subsection{A Flask alkalmazás felépítése}
+A Python alkalmazás alapja egy REST API interfész, 
+ami Get kérések küld a lokális vezérlőknek. 
+Minden kérés tartalmazza az adott végpont azonosítóját 
+és az általa mért pillanatnyi áramfelvételt. 
+Az alkalmazás állapotmentes módon működik, az állapotokat a Prometheus adatbázis és a 
+memóriában tárolt rövid távú cache kezeli.
+
+\section{Max--min fair (water-filling) elosztás}
+\label{chap:max-min-fair}
+\subsection{Elméleti háttér és cél}
+
+\subsubsection{A szabályozási feladat és definíciók}
+
+A dolgozat rendszerének fő feladata, hogy a rendelkezésre álló, 
+korlátos villamos teljesítményt dinamikusan ossza el a fogyasztók (esetemben elektromos autótöltők) között úgy, 
+hogy a hálózat fizikai védelme ne oldjon le, így a felhasználható áramon belül maradva maximalizáljuk 
+a lehetőségeket.
+
+Az elosztási algoritmus ismertetéséhez, szükséges definiálni a 
+rendszerparamétereket, amik a vezérlő működésének alapját képzik. 
+A rendszerben két védelem stalálható:
+
+\begin{itemize}
+    \item Fizikai korlát (\texttt{BREAKER\_MAX\_TOTAL})
+    \item Allokációs keret (\texttt{ALLOC\_MAX\_TOTAL})
+\end{itemize}
+
+A bemutatott \emph{max--min fair} algoritmus fő feladata tehát az, 
+hogy a fogyasztók igényeit úgy elégítse ki, hogy összegük soha ne lépje át a 
+szoftveres \texttt{ALLOC\_MAX\_TOTAL} keretet.
+
+\subsubsection{Motiváció és cél}
+
+A szimulált fogyasztók  áramigénye (\(d_i\)) időben változik. 
+Adott egy globális, maximum áramérték \(\,B=\texttt{ALLOC\_MAX\_TOTAL}\,\) amperben, 
+ennél a tényleges összáram nem lehet nagyobb. A cél egy olyan kiosztás \(\,a_i\) meghatározása, amely
+(i) nem lépi túl az egyes igényeket (\(0\le a_i\le d_i\)),
+(ii) a teljes kereten belül marad (\(\sum_i a_i \le B\)),
+(iii) és \emph{fair} a kis igényűekkel szemben, azaz a kis igények teljesülnek először, a 
+fennmaradó kapacitás pedig egyenlő alapról oszlik meg.
+
+\subsubsection{Definíció (max--min fair)}
+Egy \(\,a=(a_1,\dots,a_n)\) kiosztás \emph{max--min fair}, ha bármely más megengedett \(\,y\) esetén, 
+ha létezik \(i\) úgy, hogy \(y_i > a_i\), akkor létezik \(j\) olyan, hogy \(a_j \le a_i\) és \(y_j < a_j\). 
+Intuíció: csak a \emph{már kisebb} részesedésűek rovására lehet növelni bárki juttatását. \cite{leboudec_tutorial}
+
+\subsubsection{Feltöltés (water-filling)}
+A max--min fair kiosztás felírható egyetlen paraméterrel:
+\begin{equation}
+  a_i = \min\{\,d_i,\ \lambda\,\}, \qquad \text{ahol }\ \sum_{i=1}^n \min\{d_i,\lambda\} \;=\; B.
+\end{equation}
+A \(\lambda\) \emph{vízszint} úgy választandó, hogy a keret pont kiteljen (vagy ha \( \sum_i d_i < B\), 
+akkor \(\lambda\ge \max_i d_i\), vagyis nincs korlát).
+
+\subsubsection{Algoritmus és bonyolultság}
+Gyakorlati, determinisztikus eljárás (progresszív töltés):
+\begin{enumerate}
+  \item Rendezzük az igényeket növekvő sorrendbe: \(d_{(1)} \le \dots \le d_{(n)}\).
+  \item Iteráljuk \(k=1..n\): feltételezzük, hogy az első \(k\) igény teljesül (\(a_{(i)}=d_{(i)}\), \(i\le k\)), 
+  és a maradék \(B_k = B - \sum_{i=1}^k d_{(i)}\) egyenlő szinten oszlik meg a még nyitott \(n-k\) elemre. 
+  A jelölt vízszint: \(\lambda_k = B_k/(n-k)\).
+  \item Ha \(\lambda_k \le d_{(k+1)}\), megtaláltuk a vízszintet: az összes hátralévő \(a_{(i)}=\lambda_k\) 
+  (és a korábbiak \(d_{(i)}\)).
+  \item Ha minden \(d_{(i)}\) teljesül és még marad keret, akkor nincs korlátozás: \(a_i=d_i\).
+\end{enumerate}
+A rendezés miatt az időbonyolultság \(O(n\log n)\). A megvalósított vezérlőben egy ekvivalens, 
+iteratív \emph{progresszív} algoritmus fut, amely kis elemszámon szintén gyors és stabil.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\textwidth]{figures/Principle-of-Water-Filling-algorithm-76.png}
+    \caption{Water-filling elve telekomunikációban. \cite{Slacik2021Sensors}}
+    \label{fig:water-filling}
+\end{figure}
+
+\subsubsection{Tulajdonságok}
+\begin{itemize}
+  \item \textbf{Egyenlő szint elve:} a \(\lambda\) alatti igények teljes, a \(\lambda\) 
+  felettiek \(\lambda\)-ig kapnak. Így a kis igényűek sosem szenvednek hátrányt.
+  \item \textbf{Monotonitás:} ha a keret \(B\) nő, akkor \(\lambda\) nem csökken, és senki kiosztása nem csökken.
+  \item \textbf{Határhelyzetek:} ha \(\sum_i d_i \le B\) → nincs cap (végtelen korlát). Ha \(B=0\) → minden \(a_i=0\).
+\end{itemize}
+
+\subsection{A vezérlőben alkalmazott megvalósítás}
+
+\subsubsection{Kapcsolat a rendszer komponenseivel}
+A vezérlő igényekből (\texttt{raw\_current}) számolja a limiteket a fenti elv szerint 
+a \texttt{ALLOC\_MAX\_TOTAL} kereten. A \emph{megszakító} (breaker) logika ettől független, 
+a \emph{mért, tényleges} áramhoz viszonyít (\texttt{BREAKER\_MAX\_TOTAL}, \texttt{BREAKER\_MIN\_TOTAL}) 
+biztonsági rétegként.
+
+\subsubsection{Példák}
+\paragraph{Klasszikus példa.}
+\(d=[10,10,100]\), \(B=90\) \(\Rightarrow\) \(a=[10,10,70]\) (a két kicsi teljesül, a maradék egy szinten oszlik meg).
+\paragraph{Vegyes igények.}
+\(d=[3,8,8,20]\), \(B=25\) \(\Rightarrow\) rendezve az első igény (3) teljesül, a maradék \(22\) 
+három felé oszlik: \(a=[3,\,7.33,\,7.33,\,7.33]\) A.
+
+\subsubsection{Implementációs részletek}
+A limitek csak \(\pm 10^{-3}\) A változás felett frissülnek a fogyasztók felé (zajcsillapítás), 
+a „nincs korlát” állapotot nagy \(\texttt{INF\_CAP}\) érték reprezentálja. Ha a nyers igény összeg a keret alá esik, 
+a limitek feloldódnak.
+
+\subsubsection{Alternatív allokációs stratégiák}
+A globális keret elosztására több lehetőség is fennáll. A megfelelő algoritmus 
+választása sokat tud javítani a rendszer hatékonyságán, ezért nagyon fontos. A \texttt{max--min fair} 
+elv mellett kettő alternatívát találtam.
+
+\paragraph{Proporcionális elosztás.}
+Ennél a megközelítésnél minden fogyasztó a teljes igény (\(\sum_j d_j\)) arányában részesül a 
+rendelkezésre álló keretből, amennyiben \(\sum_j d_j > B | B = Globál keret\). A kiosztás képlete: 
+\( a_i = d_i \times (B / \sum_j d_j) \).
+\begin{itemize}
+    \item \emph{Példa:} Ha a keret \(B=90\)\,A, és az igények \(d=[50, 50, 100]\), 
+    a teljes igény itt ekkor, \(\sum d_j = 200\)\,A. Az arányos kiosztás 
+    \(a \approx [22.5, 22.5, 45]\)\,A lenne.
+    \item \emph{Előnye:} Az egyik legegyszerűbb algoritmus.
+    \item \emph{Hátrány:} Ez a stratégia a "nagy" fogyasztóknak 
+    kedvez, és a kis igényűeket "éhezteti" (starvation).
+\end{itemize}
+
+
+\paragraph{Prioritásos (súlyozott) elosztás.}
+Ebben az esetben minden fogyasztó kap \(w_i\) prioritási szintet 
+(súlyt). Ha túlterhelés lépne fel a rendszer először a magasabb prioritású 
+fogyasztókat elégíti ki, és a maradék keretből kapnak az alacsonyabb 
+prioritású fogyasztók.
+\begin{itemize}
+    \item \emph{Előny:} Lehetővé teszi a "prémium" ügyfél fogalmát pl.: adott emberek 
+    autótöltője mindig kap áramot.
+    \item \emph{Hátrány:} Szintén bevezeti az "éheztetés" (starvation) problémáját, ahol egy 
+    alacsony prioritású végpont akár soha nem kap erőforrást.
+    A rendszer komplexitása nő, és a konfiguráció nehézkessé válik.
+\end{itemize}
+
+
+\paragraph{A választás indoklása.}
+Az alternatívákkal szemben azért esett a választás a \textbf{max--min fair} elosztásra mert ez
+biztosítja a legjobb egyensúlyt az egyszerűség és az igazságosság között. 
+Motivációk között megfogalmazott pontokat teljesíti:
+
+\begin{enumerate}
+    \item \emph{Védi a kis fogyasztókat:} Garantálja, hogy aki keveset kér, az 
+    megkapja, amíg a keret ezt egyáltalán lehetővé teszi. Ezzel elkerüli az 
+    arányos elosztás fő problémáját az "éheztetést".
+    \item \emph{Igazságos a nagy fogyasztók között:} A fennmaradó kapacitást 
+    egyenlően osztja szét a nagy igényű fogyasztók között, anélkül, hogy 
+    bonyolult prioritási problémákat kéne megoldani.
+    \item \emph{Determinisztikus és stabil:} Az algoritmus viselkedése kiszámítható, 
+    és könnyen implementálható.
+\end{enumerate}
+A tárgyalt tulajdonságok miatt esett a választás a Max--Min fair elvre.
+
+\section{Vezérlési késleltetés és rendszer-reakcióidő}
+
+\subsection{Bevezetés: A reakcióidő kritikus szerepe}
+
+A dolgozatban bemutatott keretrendszer nem csak egy statikus 
+eszköz, hanem egy aktív beleszól a rendszer elemek működésébe
+Ezentúl vannak egyéb fizikai eszközök amik a felügyeleti rendszertől függetlenül üzemelnek. 
+
+Energetikai rendszerek felügyeleténél a reakcióidő kritikus tényező, 
+mert egy zárlat esetén rövid idő alatt nagyon nagy energiák szabadulnak fel. 
+A keretrendszer célja, hogy a szoftveres energia 
+allokációval a teljes keretet(\texttt{ALLOC\_MAX\_TOTAL}) úgy ossza fel,
+hogy megelőzze a fizikai védelmi eszközök
+(megszakítók)
+leoldását. A rendszer versenyt fut az idővel: a szoftvernek gyorsabban 
+kell beavatkoznia, mint ami a fizikai 
+megszakító védelmén van beállítva leoldási időnek.
+Ha a késleltetés túl nagy, a megszakítók leoldanak, mielőtt 
+a szoftveres korlátozás érvénybe léphetne. 
+
+\subsection{A vezérlés komponenseinek késleltetése }
+
+Ahhoz, hogy a teljes rendszer reakcióideét (\(T_{total}\)) megértsük, 
+fel kell bontanunk a teljes vezérlési hurkot az egyes komponensek 
+által hozzáadott késleltetésekre. Egy túlterhelés észlelése 
+és kezelése a következő lépésekből áll:
+
+\begin{enumerate}
+    \item \textbf{Mérés (\(T_{measure}\)):} Az \texttt{ESP8266} 
+    árammérő szenzora (pl. SCT-013) fizikailag megméri az áramot. 
+    Ez kb. valós időben törtnénik, ez a 
+    késleltetés elhanyagolható.
+
+    \item \textbf{Adat küldés (\(T_{publish}\)):} Az \texttt{ESP8266} 
+    frissíti a mért értéket és elérhetővé teszi azt 
+    a \texttt{/metrics} végponton. Ez elég szintén elég gyors, hogy valós idejűnek nevezzük .
+
+    \item \textbf{Adatgyűjtés (\(T_{scrape}\)):} A Prometheus szerver a kontrol szerveren keresztül,
+    gyűjti az adatokat. Mivel a kontrol szerverrel szinkronben kérdeznek, ezért szükséges mindekettőnek 
+    a konfigurációjában (\texttt{scrape\_interval}) változót előre  és egységesen meghatározni, 
+    ez időközönként lekérdezi a mérő végpontjának a \texttt{/metrics} URL-jét. 
+    \emph{Ez a rendszer egyik legjelentősebb késleltetési tényezője.} 
+    Ha egy tipikus 5 másodperces időközről beszélünk a mérés és a 
+    Prometheus általi észlelés között, átlagosan 2.5, 
+    rosszabb esetben 5 másodperc is eltelhet.
+
+    \item \textbf{Adatfeldolgozás (\(T_{query}\)):} A 
+    Kontroll Szerver lekérdezi az adatbázisból az 
+    áramokat. 
+    A lekérdezés gyors, viszont ez a lépés 
+    is a Prometheus belső frissítési 
+    ciklusától függ.
+
+    \item \textbf{Döntéshozatal (\(T_{algo}\)):} A Python szerver 
+    az adatokra lefuttatja a \texttt{max--min fair} 
+    algoritmust. Az elosztást tagalaló fejezetben láttuk, hogy ennek bonyolultsága 
+    \(O(n \log n)\), ez kis (\(n=3..10\)) fogyasztószám esetén 
+    elhanyagolható.
+
+    \item \textbf{Beavatkozás (\(T_{command}\)):} A szerver a számolás után 
+    korlátokat küld a végpontoknak. Itt egyedül a hálózati késleltetések lépnek fel 
+    (Wi-Fi, LAN).
+
+    \item \textbf{Végrehajtás (\(T_{execute}\)):} Az \texttt{ESP8266} 
+    fogadja a parancsot és a Modbus-os fizikai eszközök beállítják az autótöltő vagy egyéb eszköz maximális 
+    áramát. Ez is egy gyors műveletnek számít.
+\end{enumerate}
+
+Így jön ki, hogy a következő lesz a teljes késleltetés: 
+\begin{equation}
+    T_{total} = T_{measure} + T_{publish} + T_{scrape} + T_{query} 
+              + T_{algo} + T_{command} + T_{execute}
+\end{equation}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\textwidth, keepaspectratio]{figures/Code_Generated_Image.png}
+    \caption{késleltetés eloszlása} 
+\end{figure}
+
+\subsection{A fő késleltetési tényezők}
+
+Az előző pont lánca jól mutatja, hogy a késleltetést nem az algoritmus
+limitálja, hanem az adatgyűjtés architektúrája.
+
+A teljes késleltetés nagy részét  (\(T_{total}\)) kettő tényező dominálja:
+\begin{enumerate}
+    \item \textbf{Prometheus Scrape Interval (\(T_{scrape}\)):} 
+    Ez a rendszer "szívverése". A vezérlőhurok nem tud gyorsabban 
+    reagálni, mint amilyen sűrűn friss adathoz jut. Ha ez az 
+    érték 5 másodperc, a rendszer fizikailag "vakon" repül 
+    5 másodpercig, és csak utólag értesül a korábbi eseményekről.
+    
+    \item \textbf{Hálózati késleltetés (\(T_{command}\)):} 
+    A Wi-Fi-alapú kommunikáció további, változó hosszúságú (jitter) 
+    késleltetést vihet a rendszerbe, terhelt vagy 
+    zajos hálózati környezetben, ez különösen problémás hiszen
+    nehéz számolni a dinamikusan változó késleltetéssel.
+\end{enumerate}
+
+Míg a hálózati késleltetés általában tíz-száz milliszekundum 
+nagyságrendű, a \texttt{scrape\_interval} másodperces nagyságrendű alap beállítás szerint.
+Viszont ezt lecsökkenthetjük akár 100ms-re is,
+ez növeli a hálózati forgalmat és a szerver terhelését,
+de jelentősen csökkenti a teljes késleltetést.
+Így beállítható a megszakítók védelmi szintje ennél nagyobb értékre,
+például 500ms-re. Így már nem kell aggódnunk, hogy a késleltetés miatt
+a fizikai védelem leold.
+
+\subsection{Védelmi beállítások késleltetések alapján}
+
+A késleltetés számítása után lehetséges beállítani a védelem értékeit. 
+A rendszerben kettő kvázi független védelmi szint létezik:
+
+\begin{itemize}
+    \item \textbf{1. Szoftveres Védelem (Allokáció):} 
+    Ezt a \texttt{ALLOC\_MAX\_TOTAL} kerettel tudjuk beállítani. Célja a 
+    \emph{komfort} és a \emph{hatékonyság} biztosítása, a keretek 
+    a felhasználható teljesítmény folyamatos kihasználása és 
+    a fizikai leoldások \emph{megelőzése}. Reakcióideje megfelelően pár száz milliszekundum (\(T_{total}\)).
+    
+    \item \textbf{2. Fizikai Védelem (Megszakító):} 
+    Ezt a megszakító védelmének fizikai beállítása határozza meg. 
+    Célja a hálózat fizikai védelme. 
+    Reakcióideje azonnali viszont a védelemben késleltetést állítunk be, amit körülbelül
+    a szoftveres érték kétszeresére állítunk.
+\end{itemize}
+
+A rendszer stabil működésének feltétele, hogy e két szint 
+megfelelően legyen összehangolva, a kétszeres érték valószínűleg egy megfelelő mértékű
+eltávolítás, ami enged helyet még a jitter-nek és egyéb hibáknak a vezeték nélküli hálózaton. 
+
+\paragraph{Konfigurációs példa.}
+Tegyük fel, hogy:
+\begin{itemize}
+    \item A szoftveres keret \(\texttt{ALLOC\_MAX\_TOTAL} = 90\,A\).
+    \item A Prometheus \texttt{scrape\_interval} és a teljes hurok 
+          késleltetése \(\textbf{\(T_{total}\) = 200\,ms}\).
+    \item A csatlakoztatott eszközök (pl. autótöltők) képesek 
+          200 milliszekundum alatt további 20\,A terhelést bekapcsolni 
+          (pl. egy új autó csatlakozik).
+    \item Ebben az esetben a fizikai megszakító védelmi beállítása 
+            legyen legalább \(\textbf{\(T_{total}\) = 400\,ms}\).
+\end{itemize}
+
+Ebben az esetben az esetben megfelelő a kettő késleltetés távolsága, hogy ne történjen véletlen leoldás.
