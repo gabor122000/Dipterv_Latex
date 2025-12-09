@@ -10,44 +10,44 @@
 \noindent $\Box$ \textbf{Használtam} generatív MI segédeszközt. Az MI-vel generált tartalmakat ellenőriztem, a generált kimenetek valóságtartalmáról meggyőződtem, az alábbi táblázatban megfelelően jelöltem minden használatot.
 
 \small{\noindent
-	\begin{tabular}{|c|c|c|c|}\hline
-		\hspace{40mm} & \hspace{30mm} & \hspace{30mm} & \hspace{30mm} \\ 
-		\textbf{Felhasználási módok}	& \textbf{Generatív MI} 	& \textbf{Érintett részek} 	& \textbf{Használat becsült} \\
-		& \textbf{eszköz(ök) neve} & (fejezet, oldalszám, & \textbf{aránya} (felhasználási \\ 
-		& & hivatkozás) & módonként) \\
-		\hspace{40mm} & \hspace{30mm} & \hspace{30mm} & \hspace{30mm} \\ \hline \hline
-		Irodalomkutatás & & & \\ \hline
-		\textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline \hline
-		Programkód generálása & & & \\ \hline
-		\textbf{Prompt lényegi része } & \multicolumn{3}{|l|}{} \\ \hline \hline
-		Új ötletek, megoldási & & & \\ 
-		javaslatok generálása & & & \\ \hline
-		\textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline \hline
-		Vázlat létrehozása & & & \\
-		(szövegstruktúra, & & & \\ 
-		vázlatpontok) & & & \\ \hline
-		\textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline \hline
-		Szövegblokkok létrehozása & & & \\ \hline
-		\textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline \hline
-		Képek generálása & & & \\
-		illusztrációs célból & & & \\ \hline
-		\textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline \hline
-		Adatvizualizáció, & & & \\
-		grafikonok generálása & & & \\
-		adatpontok alapján & & & \\ \hline
-		\textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline \hline
-		Prezentáció készítése & & & \\ \hline
-		\textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline \hline
-		Egyéb (nevezze meg) & & & \\ \hline
-		\textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline
-		\multicolumn{3}{|l|}{\textbf{Összesített százalékos érték (a feladat érdemi részére nézve):}} & \\ \hline
-		\multicolumn{4}{|l|}{\textbf{Összesített érték rövid, szöveges indoklása:}} \\ 
-		\multicolumn{4}{|l|}{} \\ 
-		\multicolumn{4}{|l|}{} \\
-		\multicolumn{4}{|l|}{} \\
-		\multicolumn{4}{|l|}{} \\ \hline
-		
-	\end{tabular}
+    \begin{tabular}{|c|c|c|c|}\hline
+        \hspace{40mm} & \hspace{30mm} & \hspace{30mm} & \hspace{30mm} \\ 
+        \textbf{Felhasználási módok}    & \textbf{Generatív MI}      & \textbf{Érintett részek}  & \textbf{Használat becsült} \\
+        & \textbf{eszköz(ök) neve} & (fejezet, oldalszám, & \textbf{aránya} (felhasználási \\ 
+        & & hivatkozás) & módonként) \\
+        \hspace{40mm} & \hspace{30mm} & \hspace{30mm} & \hspace{30mm} \\ \hline \hline
+        Irodalomkutatás & Gemini & 2. fejezet (3-6. o.) & 5\% \\ \hline
+        \textbf{Prompt lényegi része}  &\multicolumn{3}{|p{10cm}|}{Open source alternatívák keresése ipari energetikai felügyeleti rendszerekre (Siemens/Schneider) és azok összehasonlítása.} \\ \hline \hline
+        Programkód generálása & Gemini & 4-6. fejezet (kódlisták) & 10\% \\ \hline
+        \textbf{Prompt lényegi része } & \multicolumn{3}{|p{10cm}|}{Flask REST API alapstruktúra létrehozása, Prometheus export formátum ellenőrzése, Kubernetes deployment YAML fájlok szintaxisának javítása.} \\ \hline \hline
+        Új ötletek, megoldási & & & \\ 
+        javaslatok generálása & & & \\ \hline
+        \textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline \hline
+        Vázlat létrehozása & & & \\
+        (szövegstruktúra, & & & \\ 
+        vázlatpontok) & & & \\ \hline
+        \textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline \hline
+        Szövegblokkok létrehozása & Gemini & Abstract (9. o.) & 10\% \\ \hline
+        \textbf{Prompt lényegi része}  &\multicolumn{3}{|p{10cm}|}{A magyar nyelvű kivonat angolra fordítása és szakmai nyelvezetének ellenőrzése.} \\ \hline \hline
+        Képek generálása & Gemini & 3.2. ábra (\ref{fig:Rendszerarchitektúra}), & 10\% \\
+        illusztrációs célból & & 6.2. ábra (\ref{kubernetes topology}) & \\ \hline
+        \textbf{Prompt lényegi része}  &\multicolumn{3}{|p{10cm}|}{IoT rendszerarchitektúra és Hibrid Kubernetes topológia diagramjának generálása vizualizációs célból.} \\ \hline \hline
+        Adatvizualizáció, & & & \\
+        grafikonok generálása & & & \\
+        adatpontok alapján & & & \\ \hline
+        \textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline \hline
+        Prezentáció készítése & & & \\ \hline
+        \textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline \hline
+        Egyéb (nevezze meg) & & & \\ \hline
+        \textbf{Prompt lényegi része}  &\multicolumn{3}{|l|}{} \\ \hline
+        \multicolumn{3}{|l|}{\textbf{Összesített százalékos érték (a feladat érdemi részére nézve):}} & \textbf{9\%} \\ \hline
+        \multicolumn{4}{|l|}{\textbf{Összesített érték rövid, szöveges indoklása:}} \\ 
+        \multicolumn{4}{|p{13cm}|}{A generatív MI eszközt kiegészítő jelleggel használtam: ismétlődő kódrészletek (boilerplate) generálására, szintaxis ellenőrzésre (Kubernetes YAML), az angol nyelvű összefoglaló javítására, valamint két illusztrációs ábra (architektúra, topológia) elkészítésére. A dolgozat érdemi szöveges részét és a rendszertervezést önállóan végeztem.} \\ 
+        \multicolumn{4}{|l|}{} \\
+        \multicolumn{4}{|l|}{} \\
+        \multicolumn{4}{|l|}{} \\ \hline
+        
+    \end{tabular}
 } % end of \small
 
 
