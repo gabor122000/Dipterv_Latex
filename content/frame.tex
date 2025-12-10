@@ -34,48 +34,71 @@ nem-funkcionális követelmények az alábbiak:
 
 \subsection{Komponensek}
 
-A rendszer telepítése és üzemeltetése Kubernetes klaszterben történik.
-Ez a környezet garantálja, hogy a Python vezérlő,
-a végpontok, valamint a Prometheus és Grafana szolgáltatások
-folyamatosan elérhetők legyenek.
+A rendszer a 3.1.2. pontban megfogalmazott követelményeknek 
+-- különösen a skálázhatóságnak és a konténerizált környezetnek -- 
+való megfelelés érdekében mikroszolgáltatás-alapú architektúrát követ. 
 
-\subsubsection{Control Server (Vezérlő)}
+A komponensek futtatását és orkesztrációját Kubernetes klaszterben 
+valósítottam meg, amely biztosítja a szolgáltatások felügyeletét 
+és az automatikus újraindulást hiba esetén. 
+\textit{(A Kubernetes technikai részleteit és 
+konfigurációját később tárgyalom részletesen.)}
 
-A központi logikát tartalmazó Python alapú vezérlő Kubernetes \texttt{Deployment}
-formájában jön létre, amelyet egy \texttt{Service} tesz elérhetővé a klaszteren belül.
-A kommunikáció biztonságoságát a \texttt{Deployment} manifestjében definiált,
-TLS tanúsítványokat tartalmazó \texttt{Secret} biztosítja.
+% --- Kontroll szerver ---
+\subsubsection{Kontroll szerver}
 
-A Flask alapú REST API két fő végpontot kínál:
+A rendszer központi logikáját tartalmazó, Python alapú alkalmazás, 
+amely a mérések fogadásáért és a beavatkozási döntések meghozataláért felel.
+
 \begin{itemize}
-    \item \texttt{/metrics}: Ez prometheus kompatibilis formátumban mutatja
-    az aktuális rendszerállapotot és fogyasztási adatokat.
-    \item Vezérlő végpontok: Itt fogadja a rendszer a beavatkozásra adott parancsokat.
+    \item \textbf{Feladata:} 
+    REST API biztosítása az adatgyűjtéshez, valamint a szabályozási 
+    algoritmus (lásd 5. fejezet) futtatása.
+    
+    \item \textbf{Kapcsolódás a követelményekhez:} 
+    A komponens állapotmentes kialakítása lehetővé teszi, 
+    hogy a Kubernetes környezetben igény szerint több példányban is 
+    fussanak (Deployment), biztosítva a magas rendelkezésre állást 
+    és a terheléselosztást. A biztonságos kommunikációhoz szükséges 
+    érzékeny adatokat (pl. tanúsítványok) a keretrendszer titkosított 
+    tárolói (Secrets) kezelik.
 \end{itemize}
 
-\subsubsection{ESP8266 Szenzor}
+% --- ESP8266 Szenzor ---
+\subsubsection{ESP8266 Szenzor (Végpontok)}
 
-Az ESP8266 szenzorok és a rendszer közötti kapcsolatot
-mikroszolgáltatások biztosítják.
-Ezeket a Kubernetes Podokat HTTPS-en keresztül látja a vezérlő,
-ezeknek folyamatosan figyeli a \texttt{/metrics} végpontját.
+A fizikai méréseket és beavatkozásokat végző IoT eszközök 
+szoftveres reprezentációja a hálózatban.
 
-Az elvárt "Plug-and-Play" működést a Kubernetes annotációi teszik lehetővé.
-Ha egy új eszköz kerül telepítésre  akkor ennek a manifest tartalmazza a
-\texttt{prometheus.io/scrape: "true"} és \texttt{prometheus.io/path: "/metrics"}
-értékeit, a Prometheus, pedig automatikusan,
-új konfiguráció beállítása nélkül is fel fogja venni ezt az eszközt.
+\begin{itemize}
+    \item \textbf{Feladata:} 
+    Árammérés és a mért adatok publikálása a központi rendszer felé, 
+    valamint a kapott vezérlési parancsok végrehajtása Modbus 
+    protokollon keresztül.
+    
+    \item \textbf{Integráció:} 
+    A rendszer ,,Plug-and-Play'' jellegét adja, hogy bármikor felvehetőek új végpontok
+    a vezérlő konfigurációjának módosításával, anélkül, hogy a központi alkalmazást újra kellene indítani.
+\end{itemize}
 
+% --- Adattárolás és Vizualizáció ---
 \subsubsection{Adattárolás és Vizualizáció}
 
-Az adatbiztonság miatt a Prometheus nem egyszerű Deployment,
-hanem \texttt{StatefulSet}.
-Az adatbázist egy \texttt{PersistentVolumeClaim} segítségével
-tartós tárhelyre menti, így egy újraindítás után is megmaradnak az adatok.
-A scrape config-ot, \texttt{ConfigMap}-ekben lehet definiálni.
+Az adatok hosszú távú megőrzéséért és az operátori felület 
+biztosításáért felelős réteg.
 
-A Grafana vizualizációs felület is tartós tárhelyet használ
-a dashboard-ok és felhasználói beállítások mentésére.
+\begin{itemize}
+    \item \textbf{Prometheus:} 
+    Idősoros adatbázis, amely a metrikák gyűjtését és tárolását végzi. 
+    Mivel az adatbiztonság kritikus szempont, a tároló réteg perzisztens 
+    tárhelyhez (Persistent Volume) kapcsolódik, így a konténerek 
+    újraindulása esetén sem veszik el mérési adat.
+    
+    \item \textbf{Grafana:} 
+    A Prometheus-ból kiolvasott adatok vizualizációjáért felelős felület. 
+    A felhasználói beállításokat és dashboard-okat szintén tartós 
+    tárhelyen kezeli a rendszer.
+\end{itemize}
 
 \section{Rendszerarchitektúra áttekintése}
 
@@ -238,14 +261,14 @@ a kontroller 3,3 v-os maximum bemenetére alakítani. Ezt egy sönt ellenállás
     R = \frac{U}{I} = \frac{3.3 \, \text{V}}{5 \, \text{A}} = 660 \, \text{m}\Omega
 \end{equation}
 \begin{center}
-    \textbf{1. egyenlet:} Áramméréshez használt sönt ellenállás értéke
+    Áramméréshez használt sönt ellenállás értéke
 \end{center}
     
 \begin{equation}
     P = U \times I = 3.3 \, \text{V} \times 5 \, \text{A} = 16.5 \, \text{W}
 \end{equation}
 \begin{center}
-    \textbf{2. egyenlet:} A sönt ellenállás
+    A sönt ellenállás
 \end{center}
 
 A számítások után látszik, hogy olyan ellenállásra van szükség, ami $R = 660 m\Omega$ ellenállással rendelkezik és legalább 16,5 W 
@@ -257,7 +280,7 @@ teljesítményt el tud diszipálni folyamatos terhelés melett is.
 A rendszer kommunikációs topológiáját és az adatfolyam irányait a \ref{fig:Rendszerarchitektúra}. ábra szemlélteti. 
 Ezután ennek a megvalósításával folytatom a két fő protokoll, a HTTP és a Modbus mentén.
 
-\subsection{Helyivezérlő és Szerver között (Wi-Fi)}
+\subsection{Helyivezérlő és Szerver között}
 
 A kommunikációhoz az ESP8266 végpontok Wi-Fi-t használnak a mérések továbbítására a vezérlő Flask szerverre. 
 Indításkor minden ESP8266 csatlakozik a konfigurált 
@@ -300,7 +323,7 @@ amit viszont könnyű megadni és frissíteni.
 Kezdetben titkosítatlan HTTP-t használtam, viszont ezt később frissítettem a valódi telepítési környezethez hasonló 
 HTTPS-el. Szerencsére az ESP8266 képes kezelni a TLS-t.
 
-\subsection{Energetikai eszköz és helyivezrlő között (Modbus)}
+\subsection{Energetikai eszköz és helyivezrlő között}
 
 A vezérlő oldalon a szerver a Modbus protokollt használja az EV-töltőkkel való kommunikációhoz. 
 A Modbus egy széles körben elterjedt protokoll az ipari rendszerekben elektronikus eszközök csatlakoztatására. 

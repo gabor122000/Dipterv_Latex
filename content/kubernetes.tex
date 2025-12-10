@@ -54,26 +54,36 @@ A migráció során ezeket képeztem le docker-ből k8-ba.
 
 \section{Rendszerarchitektúra}
 
-A rendszer a már megismert következő részeket tartalmazza:
+A rendszer a már ismertetett szoftveres építőkövekből áll, 
+amelyek a migráció során Docker Compose szolgáltatásokból 
+Kubernetes objektumokká (Deployment, Service, ConfigMap) alakulnak át.
+
+A klaszterben futó komponensek az alábbiak:
 
 \begin{itemize}
-    \item \textbf{Prometheus:} Egyéni prometheus.yml fájllal konfigurált idősoros adatbázis. 
-    Ennek szerencsétlensége, hogy az újra konfiguráció csak újra indítással lehetséges.
+    \item \textbf{Prometheus:} 
+    Egyéni \texttt{prometheus.yml} fájllal konfigurált idősoros adatbázis.
     
-    \item \textbf{Grafana:} Vizualizációs eszköz, ami közvetlen a Prometheushoz kapcsolódik megjelenítéséhez.
+    \item \textbf{Grafana:} 
+    Vizualizációs eszköz, amely közvetlenül a Prometheus-hoz kapcsolódik.
     
-    \item \textbf{ESP8266 szimulátorok:} Itt épen három példány szimulálja a különböző szimulátorazonosítókkal 
-    rendelkező eszközöket.
+    \item \textbf{Vezérlőszerver:} 
+    A központi logikát futtató alkalmazás, amely lebonyolítja az 
+    eszközök közötti interakciókat és a vezérlést.
     
-    \item \textbf{Breaker Simulators:} Más jellegű, de hasonló célú szimulátor.
-    
-    \item \textbf{Vezérlőszerver:} Lebonyolítja az eszközök közötti interakciókat, vezérlést és adatok továbbítását.
-    
-    \item \textbf{System Simulator:} A rendszer általános viselkedését emuláló központi szolgáltatás.
+    \item \textbf{Szimulátorok (ESP8266, Breaker, System):} 
+    A tesztkörnyezet fizikai eszközeit és a rendszer általános 
+    viselkedését emuláló szolgáltatások.
 \end{itemize}
 
-A Docker Compose alkalmazásban ezek az összetevők hálózaton és socketeken keresztül kapcsolódtak össze, 
-és meghatározott végpontokon jelenítettek meg. \cite{docker_kubernetes}
+Fontos megjegyezni, hogy bár a Kubernetes natívan támogatja a 
+horizontális skálázást, a magas rendelkezésre állású 
+kialakítás során nem minden itt 
+felsorolt komponens kerül többszörözésre.
+
+A replikáció elsősorban a rendszer kritikus elemeit, az adatgyűjtést 
+(Prometheus), a vizualizációt (Grafana) és a döntéshozatalt 
+(Vezérlőszerver) érinti a folyamatos üzembiztonság érdekében.
 
 \section{A Docker Compose beállítások konvertálása Kubernetes manifesztekké}
 
@@ -197,6 +207,18 @@ A Grafana-B csatlakozik a Prometheus-B-hez, és a dashboardokat inen frissíti
 (ez közvetlenül nem érhető el).
 Egyetlen DNS név mutat az A ingressre. A Kubernetes és egy külső állapotellenőrzés 
 frissíti a DNS-t a B oldalra, amikor az A leáll.
+
+A rendszer magas rendelkezésre állását biztosító topológiát a 
+\ref{kubernetes topology}. ábra szemlélteti. Ez a kialakítás egy úgynevezett 
+hibrid Kubernetes architektúrát valósít meg, 
+amelyben a feladatok megoszlanak egy helyi (Local) és egy távoli 
+(Remote) klaszter között. 
+
+A hibrid megközelítés lényege, hogy míg a helyi klaszter végzi az 
+elsődleges adatgyűjtést és vezérlést (Active Primary), addig a 
+távoli klaszter egy földrajzilag elkülönített, passzív tartalékként 
+(Passive Standby) szolgál, biztosítva az adatok replikációját és a 
+rendszer túlélőképességét lokális hiba esetén is.
 
 \subsection{Replikák megvalósítása}
 

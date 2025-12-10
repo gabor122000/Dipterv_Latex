@@ -25,13 +25,13 @@ A rendszer valós idejű működésének korlátait, különös tekintettel a h�
 
 \subsection{A Flask alkalmazás felépítése}
 A Python alkalmazás alapja egy REST API interfész, 
-ami Get kérések küld a lokális vezérlőknek. 
+ami Get kéréseket küld a lokális vezérlőknek. 
 Minden kérés tartalmazza az adott végpont azonosítóját 
 és az általa mért pillanatnyi áramfelvételt. 
 Az alkalmazás állapotmentes módon működik, az állapotokat a Prometheus adatbázis és a 
 memóriában tárolt rövid távú cache kezeli.
 
-\section{Max--min fair (water-filling) elosztás}
+\section{Max--min fair elosztás}
 \label{chap:max-min-fair}
 \subsection{Elméleti háttér és cél}
 
@@ -65,12 +65,12 @@ ennél a tényleges összáram nem lehet nagyobb. A cél egy olyan kiosztás \(\
 (iii) és \emph{fair} a kis igényűekkel szemben, azaz a kis igények teljesülnek először, a 
 fennmaradó kapacitás pedig egyenlő alapról oszlik meg.
 
-\subsubsection{Definíció (max--min fair)}
+\subsubsection{Definíció}
 Egy \(\,a=(a_1,\dots,a_n)\) kiosztás \emph{max--min fair}, ha bármely más megengedett \(\,y\) esetén, 
 ha létezik \(i\) úgy, hogy \(y_i > a_i\), akkor létezik \(j\) olyan, hogy \(a_j \le a_i\) és \(y_j < a_j\). 
 Intuíció: csak a \emph{már kisebb} részesedésűek rovására lehet növelni bárki juttatását. \cite{leboudec_tutorial}
 
-\subsubsection{Feltöltés (water-filling)}
+\subsubsection{Feltöltés}
 A max--min fair kiosztás felírható egyetlen paraméterrel:
 \begin{equation}
   a_i = \min\{\,d_i,\ \lambda\,\}, \qquad \text{ahol }\ \sum_{i=1}^n \min\{d_i,\lambda\} \;=\; B.
@@ -179,7 +179,7 @@ A tárgyalt tulajdonságok miatt esett a választás a Max--Min fair elvre.
 
 \section{Vezérlési késleltetés és rendszer-reakcióidő}
 
-\subsection{Bevezetés: A reakcióidő kritikus szerepe}
+\subsection{A reakcióidő kritikus szerepe}
 
 A dolgozatban bemutatott keretrendszer nem csak egy statikus 
 eszköz, hanem egy aktív beleszól a rendszer elemek működésébe
@@ -199,10 +199,10 @@ a szoftveres korlátozás érvénybe léphetne.
 
 \subsection{A vezérlés komponenseinek késleltetése }
 
-Ahhoz, hogy a teljes rendszer reakcióideét (\(T_{total}\)) megértsük, 
-fel kell bontanunk a teljes vezérlési hurkot az egyes komponensek 
-által hozzáadott késleltetésekre. Egy túlterhelés észlelése 
-és kezelése a következő lépésekből áll:
+A rendszer teljes reakcióidejének ($T_{total}$) elemzéséhez szükséges a 
+vezérlési lánc komponensekre bontása, és az egyes elemek által okozott 
+rész-késleltetések azonosítása. A beavatkozási folyamat a túlterhelés 
+észlelésétől az elhárításig, az alábbi lépésekből épül fel:
 
 \begin{enumerate}
     \item \textbf{Mérés (\(T_{measure}\)):} Az \texttt{ESP8266} 

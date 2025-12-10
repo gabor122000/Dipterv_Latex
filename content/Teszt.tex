@@ -47,7 +47,7 @@ három szöveges állomány határozza meg.
 Ezeket a fájlokat a rendszer
 ciklikusan olvassa, így a módosítások újraindítás nélkül érvényesülnek.
 
-\subsection{\texttt{thresholds.txt} -- küszöbök és maximum megengedhető áram}
+\subsection{Küszöbök és maximum megengedhető áram}
 
 Ez a fájl tartalmazza a globális határértékeket,
 amiket a vezérlő algoritmusnak be kell tartania.
@@ -76,12 +76,21 @@ a rendelkezésre álló áramkeretet (\texttt{ALLOC\_MAX\_TOTAL}),
     szerint, az \texttt{ALLOC\_MAX\_TOTAL} keret figyelembevételével.
 \end{itemize}
 
-\subsection{\texttt{esp\{x\}\_schedule.txt} -- idősoros bemenet}
+\subsection{Idősoros bemenet}
 
 Ezek a fájlok írják le a szimulált fogyasztók (pl. autótöltők) viselkedését,
 vagyis azt, hogy az idő függvényében mekkora áramigénnyel lépnek fel.
-Az adott másodpercben + kívánt áram (A).
-A menetrendben a legutóbbi időponthoz tartozó érték érvényes a következő megadásig.
+\subsection{Idősoros bemenet}
+
+Ezek a fájlok írják le a szimulált fogyasztók (pl. autótöltők) viselkedését, 
+vagyis azt, hogy az idő függvényében mekkora áramigénnyel lépnek fel. 
+
+A bemeneti állomány minden sora egy vezérlési pontot definiál, amely 
+megadja a szimuláció kezdetétől eltelt időt (másodpercben) és az 
+ebben az időpillanatban érvénybe lépő új áramigényt (Amperben). 
+
+A menetrendben a legutóbbi időponthoz tartozó érték érvényes a 
+következő megadásig.
 Itt fontos megemlíteni, a szimulációs vizsgálatok hatékonysága érdekében a 
 környezetben bevezetésre került a \textit{virtuális idő} fogalma. 
 Ez a mechanizmus egy szoftveres óra segítségével 
@@ -102,7 +111,7 @@ az \textbf{ESP szimulátorok} olvassák be.
 A szimulátor a saját belső virtuális órájához igazodva
 hozza létre a terheléseket.
 
-\subsection{\texttt{sim\_control.txt} -- futtatási állapot}
+\subsection{Futtatási állapot}
 
 Ez a fájl a szimuláció globális főkapcsolója.
 Egyetlen szót tartalmazhat: \texttt{RUNNING} vagy \texttt{STOPPED}
@@ -191,6 +200,13 @@ mezők jól definiált szeparátorokkal).
 
 \section{Rövid példa -- beállítás $\rightarrow$ kimenet}
 
+Az alábbiakban egy konkrét, egyszerűsített példán keresztül mutatom be 
+a konfigurációs fájlok és a rendszer viselkedésének kapcsolatát. 
+
+Ez a szcenárió szemlélteti, hogyan érvényesülnek a szöveges 
+bemenetekben definiált határértékek és menetrendek a vezérlő 
+döntéseiben, valamint a kimeneti naplóban.
+
 \noindent\textbf{thresholds.txt}
 \begin{lstlisting}
 BREAKER_MAX_TOTAL=9.0
@@ -225,7 +241,7 @@ az \texttt{effective} értékek ennek megfelelően jelennek meg az \texttt{outpu
 
 % =====================================================================
 
-\chapter{Fejlesztői panel (Dev Panel)}
+\chapter{Fejlesztői panel}
 
 \section{Cél és szerep}
 A Dev Panel egy könnyű használatú webes felület, amely a szöveges bemenetek és kimenetek kezelését, 
@@ -243,7 +259,7 @@ a saját portján (\(8000\)) fut; a Prometheus és Grafana eléréséhez gyorsli
 A grafikus felület két fő funkcionális egységre tagolódik:
 a globális vezérlőkre (Simulation Control) és a tesztesetekre (Scenarios).
 
-\subsection{Simulation Control (Vezérlőpult)}
+\subsection{Simulation Control}
 
 Itt lehet a szimuláció globális állapotát menedzselni.
 
@@ -266,12 +282,12 @@ Itt lehet a szimuláció globális állapotát menedzselni.
     A felület valós időben megjeleníti az aktuális összáramot és a rendszer státuszát.
 \end{itemize}
 
-\subsection{Scenarios (Szcenárió-kezelő modul)}
+\subsection{Scenarios}
 
 Lehetővé teszi a komplex tesztesetek egységes kezelését.
 A modul három fülre bomlik:
 
-\subsubsection{Presets (Előre definiált tesztek)}
+\subsubsection{Presets}
 
 A gyakran használt tesztesetek
 (pl. statikus túlterhelés, hiszterézis-vizsgálat, dinamikus átrendeződés)
@@ -280,7 +296,7 @@ beépített sablonként érhetők el.
 A felhasználó egyetlen kattintással betöltheti és elindíthatja ezeket.
 Ez a funkció ("Auto Test Runner") gyorsítja a demonstrációt.
 
-\subsubsection{Builder (Szerkesztő és Generátor)}
+\subsubsection{Builder}
 
 Ez a felület szolgál az egyedi tesztek összeállítására:
 
@@ -299,7 +315,7 @@ Ez a felület szolgál az egyedi tesztek összeállítására:
     és a szimuláció azonnal elindul az új értékekkel.
 \end{itemize}
 
-\subsubsection{Files (Fájlkezelés)}
+\subsubsection{Files}
 
 A panel lehetőséget biztosít a teljes konfiguráció
 (menetrendek + határértékek + vezérlési opciók)
