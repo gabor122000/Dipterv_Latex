@@ -17,7 +17,7 @@ idejű felügyeletre és korlátos erőforrások kezelésére.
 
 A javasolt architektúra a mérést és a vezérlést átlátható interfészeken mutatja. 
 A végpontok áramértékeket exportálnak Prometheus-kompatibilis metrikákként. 
-A kontrollszerver (Python/Flask) REST API-n keresztül fogadja a méréseket, majd ipari környezetben elterjedt protokollon, 
+A Központi vezérlő (Python/Flask) REST API-n keresztül fogadja a méréseket, majd ipari környezetben elterjedt protokollon, 
 Modbus/TCP-n keresztül hajt végre beavatkozásokat az energetikai eszközökön. 
 A rendszer komponensei konténerekben futnak, fejlesztői környezetben Docker Compose biztosítja az orkesztrációt, 
 míg nagyobb rendelkezésre állási igény esetén Kubernetes alkalmazható. 
@@ -31,7 +31,7 @@ A szabályozó a mérésekből származó idősoros adatokon dolgozik, és szab�
 
 A megvalósítást szimulációs környezetben próbáltam. Itt ESP8266-alapú végpont gyűjtött terhelési adatokat valós idejű vizualizációval, 
 miközben a kontrollkomponens dinamikusan korlátozta a fogyasztókat a megadott áramkeretre. A szimuláció determinisztikus bemenetekkel 
-(küszöbök, ütemezések, vezérlési szkriptek) engedte meg különböző terhelési profilok és hibaesemények létrehzozását, 
+(küszöbök, ütemezések, vezérlési szkriptek) engedte meg különböző terhelési profilok és hibaesemények létrehozását, 
 az algoritmus stabilitásának és működésének vizsgálatára. 
 A tapasztalatok szerint a rendszer képes a keretek pontos követésére, 
 a túllépések gyors csillapítására és az erőforrások igazságos elosztására.

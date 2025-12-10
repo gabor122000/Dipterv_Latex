@@ -388,7 +388,7 @@ esetén sem. A teszt során az allokációs korlátozás szándékosan nem aktí
 \textbf{Miért ez a beállítás?} Kezdetben az összáram 
 \(2{,}0+5{,}0+0{,}0=7{,}0\)~A, ami nagyobb, mint \(\texttt{BREAKER\_MAX\_TOTAL}=6\)~A, 
 ezért a megszakító \emph{leold}, \(40\)~s után a terhelések 
-\(0{,}5+0{,}5+0{,}0=1{,}0\)~A-ra esnek, ami kissebb, mint
+\(0{,}5+0{,}5+0{,}0=1{,}0\)~A-ra esnek, ami kisebb, mint
 \(\texttt{BREAKER\_MIN\_TOTAL}=3\)~A, így a megszakító \emph{visszakapcsol}. 
 Az \texttt{ALLOC\_MAX\_TOTAL}=50~A bőven a terhelések fölött van, 
 ezért \emph{allokációs korlátozás nem várható}. \newline
@@ -549,17 +549,17 @@ breakers=brk1:on,brk2:on
 
 \subsection{Magas rendelkezésre állás tesztje}
 
-Ez a vizsgálat nem az energetikai szabályozást, hanem az infrastruktúra robusztusságát ellenőrzi. A cél annak demonstrálása, hogy a Kubernetes környezet képes automatikusan kezelni a kritikus komponensek (pl. a Kontroll Szerver) meghibásodását, és emberi beavatkozás nélkül helyreállítani a szolgáltatást.
+Ez a vizsgálat nem az energetikai szabályozást, hanem az infrastruktúra robusztusságát ellenőrzi. A cél annak demonstrálása, hogy a Kubernetes környezet képes automatikusan kezelni a kritikus komponensek (pl. a Központi vezérlő) meghibásodását, és emberi beavatkozás nélkül helyreállítani a szolgáltatást.
 
 \textbf{Tesztkonfiguráció:}
-A teszt során a Kontroll Szerver \texttt{Deployment}-je 2 replikával fut. 
+A teszt során a Központi vezérlő \texttt{Deployment}-je 2 replikával fut. 
 A rendszer \texttt{RUNNING} állapotban van, folyamatos mérés és szabályozás zajlik.
 
 \textbf{Lépések:}
 \begin{enumerate}
     \item \textbf{Alapállapot ellenőrzése:} A \texttt{kubectl get pods} paranccsal ellenőrzöm, hogy a vezérlő fut.
     \item \textbf{Hiba szimulálása:} A \texttt{kubectl delete pod <pod-id>} paranccsal 
-    szándékosan lelövöm az aktív vezérlő konténert, szimulálva egy szoftveres összeomlást.
+    szándékosan leállítom az aktív vezérlő konténert, szimulálva egy szoftveres összeomlást.
     \item \textbf{Megfigyelés:} A devpanelen és a \texttt{kubectl get pods -w} kimeneten figyelem az újraindulást.
 \end{enumerate}
 

@@ -44,8 +44,7 @@ valósítottam meg, amely biztosítja a szolgáltatások felügyeletét
 \textit{(A Kubernetes technikai részleteit és 
 konfigurációját később tárgyalom részletesen.)}
 
-% --- Kontroll szerver ---
-\subsubsection{Kontroll szerver}
+\subsubsection{Központi vezérlő}
 
 A rendszer központi logikáját tartalmazó, Python alapú alkalmazás, 
 amely a mérések fogadásáért és a beavatkozási döntések meghozataláért felel.
@@ -119,7 +118,7 @@ Mindegyik töltő saját címmel rendelkezik a soros hálózaton.
 Az ESP8266 csomópontok csak az adatok két oldalú továbbadásáért felelősek, aktuális adatokat küldenek a 
 szervernek, míg a Flask szerver döntéshozatalt hajt végre és parancsokat ad ki a töltőknek.
 Az érzékelés és a vezérlés szétválasztása leegyszerűsíti a végpont tervezését 
-és a feldolgozást a szerver oldalon központosítja, ami növeli a robosztusságot.
+és a feldolgozást a szerver oldalon központosítja, ami növeli a robusztusságot.
 
 A Flask szerver egy Prometheus idősoros adatbázissal dolgozik 
 (ami külön konténer alapú szolgáltatásként fut), ez naplózza az összes mérést 
@@ -200,7 +199,7 @@ már rendelkeznek belső ellenállással, így nincs szükség további terhelé
 
 Mindkét esetben szükséges egy csatoló áramkör az érzékelőhöz: 
 A CT AC kimenete 0 V ha nincsen semmi behatás, de az ESP8266 ADC nem tudja leolvasni a negatív feszültséget. 
-Ezért elkell tolnunk az értékeket ehhez kell két ellenállás, amelyek feszültségosztót alkotnak 
+Ezért el kell tolnunk az értékeket ehhez kell két ellenállás, amelyek feszültségosztót alkotnak 
 a 3,3 V-os tápegységgel, hogy az érzékelő kimenetét a skála közepére rakjuk. 
 Lényegében az érzékelő két vezetéke csatlakozik: az egyik az ADC bemenethez, 
 a másik pedig a középponthoz körülbelül 1,65 V a 3,3 V-os táp miatt.
@@ -251,7 +250,7 @@ Ilyen például az áram méréséhez használt áramváltó és sönt ellenáll
 egy áramváltóval.
 
 Esetünkben maga az ESP8266 chip az analóg bemenetén 0 és 1 volt közötti jelszintet vár, 
-viszont a nodeMCU környezet már végez az áramkörön feszültség áttalakítást így a bemeneti skála változik 0 és 3,3 voltra.
+viszont a nodeMCU környezet már végez az áramkörön feszültség átalakítást így a bemeneti skála változik 0 és 3,3 voltra.
 
 Ha áramméréseket áramváltóval akarjuk megvalósítani akkor az áramváltó 5 A-es maximum kimenetét kell 
 a kontroller 3,3 v-os maximum bemenetére alakítani. Ezt egy sönt ellenállással tudjuk megvalósítani.
@@ -272,7 +271,7 @@ a kontroller 3,3 v-os maximum bemenetére alakítani. Ezt egy sönt ellenállás
 \end{center}
 
 A számítások után látszik, hogy olyan ellenállásra van szükség, ami $R = 660 m\Omega$ ellenállással rendelkezik és legalább 16,5 W 
-teljesítményt el tud diszipálni folyamatos terhelés melett is.
+teljesítményt el tud disszipálni folyamatos terhelés melett is.
 
 
 \section{Kommunikáció}
@@ -321,16 +320,16 @@ A Wi-Fi kommunikáció itt nem követeli meg, hogy az ESP8266 ismerje a szerver 
 használtam. Itt a kiszolgáló fix IP-címmel rendelkezhet a LAN-ban. Elég viszont, ha a szerver ismeri a végpontok IP címeit,
 amit viszont könnyű megadni és frissíteni.
 Kezdetben titkosítatlan HTTP-t használtam, viszont ezt később frissítettem a valódi telepítési környezethez hasonló 
-HTTPS-el. Szerencsére az ESP8266 képes kezelni a TLS-t.
+HTTPS-el. Az ESP8266 támogatja a TLS protokollt.
 
-\subsection{Energetikai eszköz és helyivezrlő között}
+\subsection{Energetikai eszköz és helyi vezérlő között}
 
 A vezérlő oldalon a szerver a Modbus protokollt használja az EV-töltőkkel való kommunikációhoz. 
 A Modbus egy széles körben elterjedt protokoll az ipari rendszerekben elektronikus eszközök csatlakoztatására. 
-Eredtileg PLC-k közötti Kommunikáció kialakítására használták.
+Eredetileg PLC-k közötti Kommunikáció kialakítására használták.
 A mi beállításunkban a szerver Modbus masterként van konfigurálva, 
 és minden EV töltő Modbus slave eszköz (Modbus/TCP). A Modbuson keresztül a szerver képes regisztereket olvasni a 
-töltőkről, és regisztereket írni. Ezzel áttudtam írni a töltőben a maximális áramértéket amit engedélyezett. 
+töltőkről, és regisztereket írni. Ezzel át tudtam írni a töltőben a maximális áramértéket amit engedélyezett. 
 \cite{mcuoneclipse:evcharger}
 
 \begin{figure}[!ht]
@@ -340,7 +339,7 @@ töltőkről, és regisztereket írni. Ezzel áttudtam írni a töltőben a maxi
 \end{figure}
 
 A képen Modbus RTU soros kommunikáció összeállítása látszik. Ebben a rendszerben Modbus TCP rendszert használunk.
-Ez igazából csak annyit csinál, hogy TCP keretekbe foglalja a már előbb felsorolt kommunikációt.
+Ez a gyakorlatban ez azt jelenti, hogy TCP keretekbe foglalja a már előbb felsorolt kommunikációt.
 
 \begin{comment}
 \section{Standardizált rendszer}

@@ -8,20 +8,20 @@ orkesztráció szabványává.
 
 Ebben a fejezetben megmutatom, hogy az eredetileg a Docker Compose segítségével definiált rendszeremet, 
 hogyan migráltam Kubernetes környezetbe. A rendszeremben a már meglévő szolgáltatások jelenek meg, mint a 
-Prometheus a felügyelethez, a Grafana a vizualizációhoz, több szimulátorszolgáltatás és egy vezérlőszerver. 
+Prometheus a felügyelethez, a Grafana a vizualizációhoz, több szimulátorszolgáltatás és egy központi vezérlő. 
 Itt bemutatom a Docker Compose konfigurációk Kubernetes manifesztekbe való átforgatásának kihívásait.
 
 \section{A Docker Compose és Kubernetes áttekintése}
 
 \paragraph{Docker Compose}
 Ezzel több konténert tartalmazó Docker alkalmazásokat lehet definiálni és futtatni. 
-Konfigurációja egy YML fájlban tárolt, ahol a szolgáltatásokat, hálózatokati kapcsolatokat, köteteket és 
+Konfigurációja egy YML fájlban tárolt, ahol a szolgáltatásokat, hálózatokat, kapcsolatokat, köteteket és 
 függőségeket lehet megadni. A Docker Compose leegyszerűsíti a konténerek egyetlen hoszton történő orkesztrációját, 
 így segíti a fejlesztést és tesztelést.
 
 \paragraph{Kubernetes}
 A Kubernetes (K8) viszont egy robusztus, open source platform a konténerek telepítésének, 
-skálázásának és üzemeltetésének automatizálására hostokon. A Kubernetes új absztrakciókat vezet be:
+skálázásának és üzemeltetésének automatizálására host-okon. A Kubernetes új absztrakciókat vezet be:
 
 \begin{itemize}
     \item \textbf{Pod:}
@@ -67,7 +67,7 @@ A klaszterben futó komponensek az alábbiak:
     \item \textbf{Grafana:} 
     Vizualizációs eszköz, amely közvetlenül a Prometheus-hoz kapcsolódik.
     
-    \item \textbf{Vezérlőszerver:} 
+    \item \textbf{Központi vezérlő:} 
     A központi logikát futtató alkalmazás, amely lebonyolítja az 
     eszközök közötti interakciókat és a vezérlést.
     
@@ -83,12 +83,12 @@ felsorolt komponens kerül többszörözésre.
 
 A replikáció elsősorban a rendszer kritikus elemeit, az adatgyűjtést 
 (Prometheus), a vizualizációt (Grafana) és a döntéshozatalt 
-(Vezérlőszerver) érinti a folyamatos üzembiztonság érdekében.
+(Központi vezérlő) érinti a folyamatos üzembiztonság érdekében.
 
 \section{A Docker Compose beállítások konvertálása Kubernetes manifesztekké}
 
 A Docker Compose-ról a Kubernetesre való áttérés magában foglalja az alkalmazás architektúrájának 
-újragondolását a podok, deployement-ek, szolgáltatások és más Kubernetes objektumok szerint. \cite{kubernetes}
+újragondolását a podok, deployment-ek, szolgáltatások és más Kubernetes objektumok szerint. \cite{kubernetes}
 
 \subsection{Névtér- és konfigurációkezelés}
 
@@ -124,7 +124,7 @@ A Deployment kezeli az alkalmazásban a podokat, a Service ezeket a podokat tesz
 
 Például a Prometheus szolgáltatás egyetlen replikával rendelkezik. Konfigurációja a ConfigMap-ról van mountolva, 
 a perzisztens adatai pedig egy PersistentVolumeClaim (PVC) segítségével tárolom. Hasonlóképpen, más szolgáltatások, 
-például az ESP8266 szimulátorok és a vezérlő szerver deployement-ekké alakulnak át, amelyek környezeti változókat 
+például az ESP8266 szimulátorok és a központi vezérlő deployement-ekké alakulnak át, amelyek környezeti változókat 
 és portkonfigurációkat adnak meg.
 
 \subsection{Perzisztens tárolók kezelése}
@@ -155,7 +155,7 @@ NodePort típusúak a külső hozzáféréshez vagy ClusterIP típusúak a bels�
 A migráció során a konténerek portjait le kellett képezni a hosztokra, hogy a külső interfész 
 ugyanaz maradjon az eredeti Docker Compose-hoz képest.
 
-Például a Docker Compose-ban az 5000-es porton található vezérlő szervert egy olyan Kubernetes Service replikálja, 
+Például a Docker Compose-ban az 5000-es porton található központi vzérlőt egy olyan Kubernetes Service replikálja, 
 amely egy adott NodePort-ot rendel hozzá, például 30050-et.
 
 \subsection{Telepítés és tesztelés}
@@ -202,7 +202,7 @@ emellett megbízható felügyeletet biztosít:
 
 A Prometheus-A minden célpontot lekérdez, és elvégzi az összes értékelést.
 A Prometheus-B távoli írást kap A-tól (A hálózat felesleges terhelésének 
-elkerülése érdekében nem scrapel közvetlen).
+elkerülése érdekében nem scrap-el közvetlen).
 A Grafana-B csatlakozik a Prometheus-B-hez, és a dashboardokat inen frissíti 
 (ez közvetlenül nem érhető el).
 Egyetlen DNS név mutat az A ingressre. A Kubernetes és egy külső állapotellenőrzés 
@@ -275,7 +275,7 @@ Az eredeti A prometheus-ból pedig a B-be folyamatosan írunk.
 \end{lstlisting}
 
 A grafana megvalósítása során igazából csak egy ugyanolyan deployement-et hozunk létre.
-Ez egy másolat a másikról amire ha kell áttudunk bármikor térni.
+Ez egy másolat a másikról amire ha kell bármikor át tudunk térni.
 
 \begin{lstlisting}
   spec:
@@ -307,7 +307,7 @@ az alacsonyabb szintű problémákat.
 \end{lstlisting}
 
 Az inicializálás után csak egy tokent kellett adni a nodenak, hogy csatlakozzon a clusterhez.
-Ezután a a további folyamatokat kezelte is a Kubeadm.
+Ezután a további folyamatokat kezelte is a Kubeadm.
 
 \begin{lstlisting}
   sudo kubeadm join 10.200.0.1:6443 \

@@ -62,7 +62,7 @@ A \texttt{sendMetricsToEndpoint()} függvény formázza a méréseket Prometheus
 \end{itemize}
 
 Ez a funkció a Prometheus-kompatibilis mért érték és címkézési formátummal küldi el a mérést. 
-Amikor például a vezérlő szerver lekéri a \texttt{/metrics} végpontot, a HTTPS-kiszolgáló 
+Amikor például a központi vezérlő lekéri a \texttt{/metrics} végpontot, a HTTPS-kiszolgáló 
 \texttt{200 OK} státusszal küldi vissza ezeket a formázott metrikákat, amennyiben minden rendben ment.
 
 \paragraph{Main loop}
@@ -115,7 +115,7 @@ Legfontosabb komponensek és munkafolyamatok:
 
 Az ESP8266 arduino alapokon fut, és HTTPS segítségével csatlakozik a LAN-hoz 
 Wi-Fi-n keresztül. Minden megszakító interakció RESTful API hívásokon keresztül 
-történik a Python vezérlő szerverhez:
+történik a Python központi vezérlőhez:
 
 \begin{lstlisting}
     https://<control-server>/api/breakers/<id>/state
@@ -125,15 +125,15 @@ történik a Python vezérlő szerverhez:
     { "breaker_state": 1 }
 \end{lstlisting}
 
-A metrika mezők használatával a Python szerver fordítás nélkül le tudja képezni a 
+A metrika mezők használatával a közpoonti vezérlő fordítás nélkül le tudja képezni a 
 bejövő JSON-t a Prometheus-nak megfelelő formátumra 
 (breaker\_state és breaker\_command).
 
-\section{Kontroll szerver}
+\section{Központi vezérlő}
 
 \subsection{Szerepe és technológiai háttere}
 
-A Kontroll Szerver a keretrendszer központi döntéshozó egysége.
+A Központi vezérlő a keretrendszer központi döntéshozó egysége.
 Míg az ESP végpontok feladata a mérés és a fizikai beavatkozás,
 addig a szerver felelős az adatkezelésért,
 a korlátok kezeléséért
@@ -141,7 +141,7 @@ a korlátok kezeléséért
 
 A megvalósításhoz a \textbf{Python} nyelvet
 és a \textbf{Flask} keretrendszert választottam.
-Azért,erre esett a választásom, mert
+Azért esett erre a választásom, mert
 sok előre elkészített könyvtár érhető el hozzá,
 és így nem nekem kelett megírnom az egész REST API-t a semmiből.
 Ez, pedig így könnyen integrálható
@@ -178,10 +178,10 @@ hogy megőrizzem a töltési áramok történetét és ez alapján irányítsam 
     \caption{Prometheus \cite{youtube:someid}} 
 \end{figure}
 
-A Flask szerver-ből könnyű továbbítani az adatokat. A megközelítés amit én használtam hogy egy HTTPS /metrics 
+A központi vezérlő-ből könnyű továbbítani az adatokat. A megközelítés amit én használtam hogy egy HTTPS /metrics 
 végpont elérhetővé tettem. Amin prometheus által olvasható formában hirdettem az adatokat. 
 Például a Flask alkalmazás tudja továbbítani a mért számokat:
-\begin{lstlisting}[language=Python, caption={Prometheus metrika deklarálása a Flask szerveren}]
+\begin{lstlisting}[language=Python, caption={Prometheus metrika deklarálása a központi vezérlőn}]
     current_gauge = prometheus_client.Gauge(
         'ev_charger_current', 
         'Current draw of EV charger', 
@@ -200,9 +200,9 @@ ha új eszközt szeretnénk felvenni ez
 a konfigurációs fájl szerkesztését és a Prometheus szolgáltatás
 újraindítását igényli.
 
-Ennek kiküszöbölésére a Kontroll Szervert egy dinamikus aggregációs rétegként alkalmazom.
+Ennek kiküszöbölésére a Központi vezérlőt egy dinamikus aggregációs rétegként alkalmazom.
 A Prometheus konfigurációjában így egyetlen stabil, statikus célpont szerepel:
-maga a Kontroll Szerver.
+maga a Központi vezérlő.
 
 A szerver belső memóriában tartja nyilván a végpontokat és azok legfrissebb méréseit.
 Amikor a Prometheus lekérdezi a szerver \texttt{/metrics} végpontját,
@@ -328,7 +328,7 @@ Ezután az idősoros panel: ábrázolja az összegzett értéket három fázison
 Itt ugyanazon a tengelyen láthatóak a három fázis összegzett értékei, 
 különböző színnel és elnevezéssel.
 Az úgynevezett "mérőpanelen" a pillanatnyi fázisáramokat három kis mérő formájában
-lehet látni igazából továbbra is a a fenti lekérdezésseket használva, 
+lehet látni igazából továbbra is a fenti lekérdezésseket használva, 
 pillanatnyi csak üzemmódban.
 A küszöb értékeket állítottam be a könnyeb vizualizáció érdekében 
 a töltő névleges áramának, 

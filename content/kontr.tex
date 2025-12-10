@@ -44,7 +44,7 @@ a lehetőségeket.
 
 Az elosztási algoritmus ismertetéséhez, szükséges definiálni a 
 rendszerparamétereket, amik a vezérlő működésének alapját képzik. 
-A rendszerben két védelem stalálható:
+A rendszerben két védelem található:
 
 \begin{itemize}
     \item Fizikai korlát (\texttt{BREAKER\_MAX\_TOTAL})
@@ -214,8 +214,8 @@ rész-késleltetések azonosítása. A beavatkozási folyamat a túlterhelés
     frissíti a mért értéket és elérhetővé teszi azt 
     a \texttt{/metrics} végponton. Ez elég szintén elég gyors, hogy valós idejűnek nevezzük .
 
-    \item \textbf{Adatgyűjtés (\(T_{scrape}\)):} A Prometheus szerver a kontrol szerveren keresztül,
-    gyűjti az adatokat. Mivel a kontrol szerverrel szinkronben kérdeznek, ezért szükséges mindekettőnek 
+    \item \textbf{Adatgyűjtés (\(T_{scrape}\)):} A Prometheus szerver a központi vezérlőn keresztül,
+    gyűjti az adatokat. Mivel a központi veérlővel szinkronban kérdeznek, ezért szükséges mindekettőnek 
     a konfigurációjában (\texttt{scrape\_interval}) változót előre  és egységesen meghatározni, 
     ez időközönként lekérdezi a mérő végpontjának a \texttt{/metrics} URL-jét. 
     \emph{Ez a rendszer egyik legjelentősebb késleltetési tényezője.} 
@@ -224,7 +224,7 @@ rész-késleltetések azonosítása. A beavatkozási folyamat a túlterhelés
     rosszabb esetben 5 másodperc is eltelhet.
 
     \item \textbf{Adatfeldolgozás (\(T_{query}\)):} A 
-    Kontroll Szerver lekérdezi az adatbázisból az 
+    Központi vezérlő lekérdezi az adatbázisból az 
     áramokat. 
     A lekérdezés gyors, viszont ez a lépés 
     is a Prometheus belső frissítési 
@@ -278,13 +278,12 @@ A teljes késleltetés nagy részét  (\(T_{total}\)) kettő tényező dominálj
 \end{enumerate}
 
 Míg a hálózati késleltetés általában tíz-száz milliszekundum 
-nagyságrendű, a \texttt{scrape\_interval} másodperces nagyságrendű alap beállítás szerint.
-Viszont ezt lecsökkenthetjük akár 100ms-re is,
-ez növeli a hálózati forgalmat és a szerver terhelését,
-de jelentősen csökkenti a teljes késleltetést.
-Így beállítható a megszakítók védelmi szintje ennél nagyobb értékre,
-például 500ms-re. Így már nem kell aggódnunk, hogy a késleltetés miatt
-a fizikai védelem leold.
+nagyságrendű, a \texttt{scrape\_interval} alapbeállítása 
+másodperces nagyságrendű. A tesztek során a hálózat kímélése érdekében ezt a nagyobb 
+alapértéket használtam, azonban éles üzemben ez lecsökkenthető akár $100~\text{ms}$-ra is. 
+Ez bár növeli a hálózati forgalmat és a szerver terhelését, jelentősen csökkenti a teljes késleltetést. 
+Így a megszakítók védelmi szintje beállítható egy biztonságos, például $500~\text{ms}$-os értékre, anélkül, 
+hogy aggódnunk kellene a késleltetésből fakadó téves fizikai leoldások miatt.
 
 \subsection{Védelmi beállítások késleltetések alapján}
 

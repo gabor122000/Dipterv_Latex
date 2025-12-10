@@ -61,7 +61,7 @@ ALLOC_MAX_TOTAL=95.0      # [A] - Max aram ertek
 \end{lstlisting}
 
 \noindent\textbf{Feldolgozás módja:}
-A kontroll Szerver minden vezérlési ciklus elején
+A Központi vezérlő minden vezérlési ciklus elején
 beolvassa ezt a fájlt.
 Ez lehetővé teszi, hogy szimuláció közben is változtathassuk
 a rendelkezésre álló áramkeretet (\texttt{ALLOC\_MAX\_TOTAL}),
@@ -96,7 +96,7 @@ környezetben bevezetésre került a \textit{virtuális idő} fogalma.
 Ez a mechanizmus egy szoftveres óra segítségével 
 leválasztja a lokális vezérlőket a valós fizikai időtől, 
 így lehetővé teszi a hosszú távú folyamatok (pl. egész napos terhelési ciklusok) 
-nagyságrendekkel gyorsabb, de adatkonzisztens lefuttatását. A virtuális órákat a kontrol szerver szinkronizálja.
+nagyságrendekkel gyorsabb, de adatkonzisztens lefuttatását. A virtuális órákat a központi vezérlő szinkronizálja.
 
 \begin{lstlisting}
 # seconds  amps
@@ -163,12 +163,12 @@ breakers=brk1:on,brk2:on
     Ilyenkor a virtuális óra minden ciklusban előrelép.
     A szimulált végpontok (ESP-k) a $t_{sim}$ időpillanat alapján keresik ki
     a menetrendjükből (\texttt{schedule.txt}) az aktuális áramigényt.
-    A vezérlő szerver dolgozza fel az adatokat és
+    A központi vezérlő dolgozza fel az adatokat és
     számolja az allokációt, küldi ki az új korlátokat.
     
     \item \textbf{STOPPED (Felfüggesztés):}
     Ekkor a virtuális idő „befagy” ($t_{sim} = \text{const}$).
-    A szimulátorok megálnak, tartják az utolsó beállított értéket.
+    A szimulátorok megállnak, tartják az utolsó beállított értéket.
     A vezérlő továbbra is mér és naplózza,
     de nem történik beavatkozás nem küld új korlátokat és nem kapcsol megszakítót.
 \end{itemize}
